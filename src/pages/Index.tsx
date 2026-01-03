@@ -13,7 +13,7 @@ import { useAQIData } from '@/hooks/useAQIData';
 import { useAlertSubscriptions } from '@/hooks/useAlertSubscriptions';
 import { useAuth } from '@/hooks/useAuth';
 import { StationData } from '@/types/aqi';
-import { RefreshCw, Map, LayoutGrid, Clock, Key, Wind } from 'lucide-react';
+import { RefreshCw, Map, LayoutGrid, Clock, Key, Wind, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -28,9 +28,7 @@ const Index = () => {
   const [viewMode, setViewMode] = useState<'map' | 'cards'>('map');
 
   const { isAuthenticated } = useAuth();
-  const { stations, isLoading, lastUpdated, refresh } = useAQIData({
-    token: undefined, // Using mock data for now
-  });
+  const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
   const { subscriptions, addSubscription, deleteSubscription } = useAlertSubscriptions();
 
   const subscribedStationIds = useMemo(
@@ -116,6 +114,24 @@ const Index = () => {
                   {lastUpdated.toLocaleTimeString()}
                 </div>
               )}
+              <div className={cn(
+                "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
+                isUsingLiveData 
+                  ? "bg-aqi-good/20 text-aqi-good" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {isUsingLiveData ? (
+                  <>
+                    <Wifi className="h-3 w-3" />
+                    Live Data
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3" />
+                    Demo Data
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
