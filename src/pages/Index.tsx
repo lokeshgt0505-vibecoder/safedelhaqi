@@ -6,23 +6,17 @@ import { StationSearch } from '@/components/StationSearch';
 import { HealthAdvisoryPanel } from '@/components/HealthAdvisoryPanel';
 import { ZoneLegend } from '@/components/ZoneLegend';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useAQIData } from '@/hooks/useAQIData';
 import { useAlertSubscriptions } from '@/hooks/useAlertSubscriptions';
 import { useAuth } from '@/hooks/useAuth';
 import { StationData } from '@/types/aqi';
-import { RefreshCw, Map, LayoutGrid, Clock, Key, Wind, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Map, LayoutGrid, Clock, Wind, Wifi, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const [mapboxToken, setMapboxToken] = useState(() => 
-    localStorage.getItem('mapbox_token') || ''
-  );
-  const [tokenInput, setTokenInput] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(!mapboxToken);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [zoneFilter, setZoneFilter] = useState<'blue' | 'yellow' | 'red' | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'cards'>('map');
@@ -55,15 +49,6 @@ const Index = () => {
       stations.reduce((sum, s) => sum + s.aqi, 0) / stations.length
     );
   }, [stations]);
-
-  const handleSaveToken = () => {
-    if (tokenInput.trim()) {
-      localStorage.setItem('mapbox_token', tokenInput.trim());
-      setMapboxToken(tokenInput.trim());
-      setShowTokenInput(false);
-      toast.success('Mapbox token saved');
-    }
-  };
 
   const handleSubscribe = async (stationId: string, stationName: string) => {
     if (!isAuthenticated) {
@@ -234,48 +219,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Mapbox Token Input */}
-        {showTokenInput && (
-          <Card className="mb-6 border-primary/20 bg-primary/5">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Key className="h-4 w-4" />
-                Enter Mapbox Token for Interactive Map
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="pk.eyJ1IjoieW91ci10b2tlbi1oZXJlIi4uLg=="
-                  value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value)}
-                  className="flex-1"
-                />
-                <Button onClick={handleSaveToken}>Save Token</Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowTokenInput(false)}
-                >
-                  Skip
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Get a free token at{' '}
-                <a
-                  href="https://mapbox.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  mapbox.com
-                </a>
-                . The map will work without it using card view.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Main Content */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Map / Cards View */}
@@ -288,7 +231,6 @@ const Index = () => {
                       stations={filteredStations}
                       selectedStation={selectedStation}
                       onStationClick={setSelectedStation}
-                      mapboxToken={mapboxToken}
                     />
                   </div>
                 </Card>
