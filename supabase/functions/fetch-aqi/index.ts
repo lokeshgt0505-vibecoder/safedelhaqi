@@ -1,7 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const WAQI_API_TOKEN = Deno.env.get('WAQI_API_TOKEN');
 const WAQI_API_BASE = 'https://api.waqi.info';
+
+function getWaqiToken() {
+  // Read per-request so secret updates take effect without needing a redeploy/restart.
+  return (Deno.env.get('WAQI_API_TOKEN') ?? '').trim();
+}
+
+function maskToken(token: string) {
+  if (token.length <= 8) return '***';
+  return `${token.slice(0, 4)}...${token.slice(-4)}`;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,9 +24,11 @@ serve(async (req) => {
   }
 
   try {
-    const { action, stationId, bounds } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { action, stationId, bounds, keyword } = (body ?? {}) as any;
 
-    if (!WAQI_API_TOKEN) {
+    const token = getWaqiToken();
+    if (!token) {
       throw new Error('WAQI_API_TOKEN not configured');
     }
 
@@ -33,9 +44,8 @@ serve(async (req) => {
           lng2: 77.5 
         };
         
-        const url = `${WAQI_API_BASE}/map/bounds/?latlng=${defaultBounds.lat1},${defaultBounds.lng1},${defaultBounds.lat2},${defaultBounds.lng2}&token=${WAQI_API_TOKEN}`;
-        console.log('Fetching stations from:', url.replace(WAQI_API_TOKEN, '***'));
-        
+        const url = `${WAQI_API_BASE}/map/bounds/?latlng=${defaultBounds.lat1},${defaultBounds.lng1},${defaultBounds.lat2},${defaultBounds.lng2}&token=${token}`;
+        console.log('Fetching stations from: token=', maskToken(token));
         const response = await fetch(url);
         const result = await response.json();
         
@@ -64,7 +74,7 @@ serve(async (req) => {
           throw new Error('stationId is required for getStationDetails');
         }
         
-        const url = `${WAQI_API_BASE}/feed/${stationId}/?token=${WAQI_API_TOKEN}`;
+        const url = `${WAQI_API_BASE}/feed/${stationId}/?token=${token}`;
         console.log('Fetching station details for:', stationId);
         
         const response = await fetch(url);
@@ -87,12 +97,11 @@ serve(async (req) => {
       }
 
       case 'searchStation': {
-        const { keyword } = await req.json();
         if (!keyword) {
           throw new Error('keyword is required for searchStation');
         }
         
-        const url = `${WAQI_API_BASE}/search/?keyword=${encodeURIComponent(keyword)}&token=${WAQI_API_TOKEN}`;
+        const url = `${WAQI_API_BASE}/search/?keyword=${encodeURIComponent(keyword)}&token=${token}`;
         console.log('Searching for:', keyword);
         
         const response = await fetch(url);
