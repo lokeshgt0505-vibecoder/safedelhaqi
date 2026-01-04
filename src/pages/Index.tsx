@@ -5,14 +5,16 @@ import { StationCard } from '@/components/StationCard';
 import { StationSearch } from '@/components/StationSearch';
 import { HealthAdvisoryPanel } from '@/components/HealthAdvisoryPanel';
 import { ZoneLegend } from '@/components/ZoneLegend';
+import { ForecastPanel } from '@/components/forecast/ForecastPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useAQIData } from '@/hooks/useAQIData';
+import { useAQIForecast } from '@/hooks/useAQIForecast';
 import { useAlertSubscriptions } from '@/hooks/useAlertSubscriptions';
 import { useAuth } from '@/hooks/useAuth';
 import { StationData } from '@/types/aqi';
-import { RefreshCw, Map, LayoutGrid, Clock, Wind, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Map, LayoutGrid, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -20,9 +22,11 @@ const Index = () => {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [zoneFilter, setZoneFilter] = useState<'blue' | 'yellow' | 'red' | null>(null);
   const [viewMode, setViewMode] = useState<'map' | 'cards'>('map');
+  const [showForecast, setShowForecast] = useState(false);
 
   const { isAuthenticated } = useAuth();
   const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
+  const { forecast, isLoading: isForecastLoading, generateForecast, clearForecast } = useAQIForecast();
   const { subscriptions, addSubscription, deleteSubscription } = useAlertSubscriptions();
 
   const subscribedStationIds = useMemo(
@@ -65,6 +69,19 @@ const Index = () => {
     }
   };
 
+  const handleGenerateForecast = async () => {
+    if (stations.length === 0) {
+      toast.error('No station data available');
+      return;
+    }
+    await generateForecast(stations);
+    setShowForecast(true);
+  };
+
+  const handleCloseForecast = () => {
+    setShowForecast(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -82,6 +99,19 @@ const Index = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleGenerateForecast}
+                disabled={isForecastLoading || stations.length === 0}
+              >
+                {isForecastLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                )}
+                5-Year Forecast
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -280,6 +310,11 @@ const Index = () => {
           </div>
         </div>
       </main>
+
+      {/* Forecast Panel */}
+      {showForecast && forecast && (
+        <ForecastPanel forecast={forecast} onClose={handleCloseForecast} />
+      )}
     </div>
   );
 };
