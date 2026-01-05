@@ -3,26 +3,27 @@ import { Header } from '@/components/Header';
 import { AQIMap } from '@/components/AQIMap';
 import { StationCard } from '@/components/StationCard';
 import { StationSearch } from '@/components/StationSearch';
-import { HealthAdvisoryPanel } from '@/components/HealthAdvisoryPanel';
 import { ZoneLegend } from '@/components/ZoneLegend';
 import { ForecastPanel } from '@/components/forecast/ForecastPanel';
+import { ComparisonView } from '@/components/forecast/ComparisonView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAQIData } from '@/hooks/useAQIData';
 import { useAQIForecast } from '@/hooks/useAQIForecast';
 import { useAlertSubscriptions } from '@/hooks/useAlertSubscriptions';
 import { useAuth } from '@/hooks/useAuth';
 import { StationData } from '@/types/aqi';
-import { RefreshCw, Map, LayoutGrid, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2 } from 'lucide-react';
+import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [zoneFilter, setZoneFilter] = useState<'blue' | 'yellow' | 'red' | null>(null);
-  const [viewMode, setViewMode] = useState<'map' | 'cards'>('map');
   const [showForecast, setShowForecast] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [forecastYear, setForecastYear] = useState<number>(new Date().getFullYear() + 1);
 
   const { isAuthenticated } = useAuth();
   const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
@@ -54,6 +55,11 @@ const Index = () => {
     );
   }, [stations]);
 
+  const forecastYears = useMemo(() => {
+    if (!forecast) return [];
+    return forecast.forecasts[0]?.yearlyPredictions.map((p) => p.year) || [];
+  }, [forecast]);
+
   const handleSubscribe = async (stationId: string, stationName: string) => {
     if (!isAuthenticated) {
       toast.error('Please sign in to subscribe to alerts');
@@ -83,22 +89,88 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
       <Header />
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Hero Section */}
-        <section className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Delhi Air Quality Index
-              </h1>
-              <p className="text-muted-foreground">
-                Real-time AQI monitoring and zone classification for residential planning
-              </p>
+      {/* Top Control Bar */}
+      <div className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur-sm">
+        <div className="px-4 py-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            {/* Left side - Stats */}
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+                <Wind className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Avg AQI:</span>
+                <span className="text-lg font-bold font-display">{averageAQI}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-zone-blue/20">
+                  <div className="w-2.5 h-2.5 rounded-full bg-zone-blue" />
+                  <span className="text-xs font-medium">{zoneCounts.blue}</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-zone-yellow/20">
+                  <div className="w-2.5 h-2.5 rounded-full bg-zone-yellow" />
+                  <span className="text-xs font-medium">{zoneCounts.yellow}</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-zone-red/20">
+                  <div className="w-2.5 h-2.5 rounded-full bg-zone-red" />
+                  <span className="text-xs font-medium">{zoneCounts.red}</span>
+                </div>
+              </div>
+
+              <div className={cn(
+                "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
+                isUsingLiveData 
+                  ? "bg-aqi-good/20 text-aqi-good" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                {isUsingLiveData ? (
+                  <>
+                    <Wifi className="h-3 w-3" />
+                    Live
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="h-3 w-3" />
+                    Demo
+                  </>
+                )}
+              </div>
+
+              {lastUpdated && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Right side - Actions */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <StationSearch
+                stations={stations}
+                onSelect={setSelectedStation}
+                onAddCustomLocation={(coords) => {
+                  toast.info(`Custom location added: ${coords.name}`);
+                }}
+              />
+              
+              <ZoneLegend
+                onZoneFilter={setZoneFilter}
+                activeZone={zoneFilter}
+                counts={zoneCounts}
+              />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refresh}
+                disabled={isLoading}
+              >
+                <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+              </Button>
+
               <Button
                 variant="default"
                 size="sm"
@@ -112,208 +184,94 @@ const Index = () => {
                 )}
                 5-Year Forecast
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refresh}
-                disabled={isLoading}
-              >
-                <RefreshCw
-                  className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')}
-                />
-                Refresh
-              </Button>
-              {lastUpdated && (
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Clock className="h-4 w-4" />
-                  {lastUpdated.toLocaleTimeString()}
-                </div>
+
+              {forecast && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowComparison(true)}
+                >
+                  <GitCompare className="h-4 w-4 mr-2" />
+                  Compare
+                </Button>
               )}
-              <div className={cn(
-                "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium",
-                isUsingLiveData 
-                  ? "bg-aqi-good/20 text-aqi-good" 
-                  : "bg-muted text-muted-foreground"
-              )}>
-                {isUsingLiveData ? (
-                  <>
-                    <Wifi className="h-3 w-3" />
-                    Live Data
-                  </>
-                ) : (
-                  <>
-                    <WifiOff className="h-3 w-3" />
-                    Demo Data
-                  </>
-                )}
-              </div>
             </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-gradient-to-br from-card to-muted/30">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Wind className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold">{averageAQI}</p>
-                    <p className="text-xs text-muted-foreground">Avg. AQI</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-zone-blue-bg to-card">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-zone-blue/10">
-                    <div className="w-5 h-5 rounded-full bg-zone-blue" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold text-zone-blue">
-                      {zoneCounts.blue}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Blue Zones</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-zone-yellow-bg to-card">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-zone-yellow/10">
-                    <div className="w-5 h-5 rounded-full bg-zone-yellow" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold text-zone-yellow">
-                      {zoneCounts.yellow}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Yellow Zones</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-zone-red-bg to-card">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-zone-red/10">
-                    <div className="w-5 h-5 rounded-full bg-zone-red" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-display font-bold text-zone-red">
-                      {zoneCounts.red}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Red Zones</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
-            <StationSearch
-              stations={stations}
-              onSelect={setSelectedStation}
-              onAddCustomLocation={(coords) => {
-                toast.info(`Custom location added: ${coords.name}`);
-              }}
-            />
-            <div className="flex items-center gap-4">
-              <ZoneLegend
-                onZoneFilter={setZoneFilter}
-                activeZone={zoneFilter}
-                counts={zoneCounts}
-              />
-              <div className="flex rounded-lg border border-border overflow-hidden">
-                <Button
-                  variant={viewMode === 'map' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="rounded-none"
-                  onClick={() => setViewMode('map')}
-                >
-                  <Map className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="rounded-none"
-                  onClick={() => setViewMode('cards')}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Map / Cards View */}
-          <div className="lg:col-span-2">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'map' | 'cards')}>
-              <TabsContent value="map" className="mt-0">
-                <Card className="overflow-hidden">
-                  <div className="h-[500px]">
-                    <AQIMap
-                      stations={filteredStations}
-                      selectedStation={selectedStation}
-                      onStationClick={setSelectedStation}
-                    />
-                  </div>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="cards" className="mt-0">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {filteredStations.map((station, index) => (
-                    <div
-                      key={station.id}
-                      className="animate-fade-in"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <StationCard
-                        station={station}
-                        isSubscribed={subscribedStationIds.has(station.id)}
-                        onSubscribe={handleSubscribe}
-                        onUnsubscribe={handleUnsubscribe}
-                        onClick={() => setSelectedStation(station)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Selected Station Details */}
-            {selectedStation && (
-              <div className="animate-slide-in-right">
-                <StationCard
-                  station={selectedStation}
-                  isSubscribed={subscribedStationIds.has(selectedStation.id)}
-                  onSubscribe={handleSubscribe}
-                  onUnsubscribe={handleUnsubscribe}
-                />
-              </div>
-            )}
-
-            {/* Health Advisory */}
-            <HealthAdvisoryPanel
-              aqi={selectedStation?.aqi || averageAQI}
-              stationName={selectedStation?.name}
-            />
           </div>
         </div>
-      </main>
+      </div>
+
+      {/* Full Screen Map */}
+      <div className="flex-1 relative">
+        <AQIMap
+          stations={filteredStations}
+          selectedStation={selectedStation}
+          onStationClick={setSelectedStation}
+          forecast={forecast}
+          forecastYear={forecastYear}
+          onForecastYearChange={setForecastYear}
+        />
+
+        {/* Station Details Sheet */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute top-4 right-4 z-[1000] shadow-lg"
+            >
+              <PanelRightOpen className="h-4 w-4 mr-2" />
+              Stations
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-[400px] sm:w-[540px] p-0 overflow-hidden">
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b border-border">
+                <h3 className="font-display text-lg font-semibold">AQI Stations</h3>
+                <p className="text-sm text-muted-foreground">
+                  {filteredStations.length} stations
+                </p>
+              </div>
+              <div className="flex-1 overflow-auto p-4 space-y-3">
+                {filteredStations.map((station) => (
+                  <StationCard
+                    key={station.id}
+                    station={station}
+                    isSubscribed={subscribedStationIds.has(station.id)}
+                    onSubscribe={handleSubscribe}
+                    onUnsubscribe={handleUnsubscribe}
+                    onClick={() => setSelectedStation(station)}
+                  />
+                ))}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* Selected Station Card */}
+        {selectedStation && (
+          <div className="absolute top-4 left-4 z-[1000] w-80 animate-slide-in-right">
+            <StationCard
+              station={selectedStation}
+              isSubscribed={subscribedStationIds.has(selectedStation.id)}
+              onSubscribe={handleSubscribe}
+              onUnsubscribe={handleUnsubscribe}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Forecast Panel */}
       {showForecast && forecast && (
         <ForecastPanel forecast={forecast} onClose={handleCloseForecast} />
+      )}
+
+      {/* Comparison View */}
+      {showComparison && forecast && (
+        <ComparisonView
+          stations={stations}
+          forecast={forecast}
+          onClose={() => setShowComparison(false)}
+        />
       )}
     </div>
   );

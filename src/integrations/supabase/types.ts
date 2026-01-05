@@ -53,6 +53,45 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_aqi: {
+        Row: {
+          aqi: number
+          created_at: string
+          id: string
+          pm10: number | null
+          pm25: number | null
+          recorded_at: string
+          source: string | null
+          station_id: string
+          station_name: string
+          zone: string
+        }
+        Insert: {
+          aqi: number
+          created_at?: string
+          id?: string
+          pm10?: number | null
+          pm25?: number | null
+          recorded_at: string
+          source?: string | null
+          station_id: string
+          station_name: string
+          zone: string
+        }
+        Update: {
+          aqi?: number
+          created_at?: string
+          id?: string
+          pm10?: number | null
+          pm25?: number | null
+          recorded_at?: string
+          source?: string | null
+          station_id?: string
+          station_name?: string
+          zone?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

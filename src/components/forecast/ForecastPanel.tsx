@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ForecastData } from '@/types/forecast';
 import { ForecastChart } from './ForecastChart';
 import { ForecastStationList } from './ForecastStationList';
+import { ForecastExport } from './ForecastExport';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 
@@ -29,9 +30,12 @@ export function ForecastPanel({ forecast, onClose }: ForecastPanelProps) {
               AI-powered predictions for Delhi NCR livability zones
             </p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <ForecastExport forecast={forecast} />
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Content */}

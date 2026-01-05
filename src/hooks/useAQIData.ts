@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StationData } from '@/types/aqi';
 import { DELHI_STATIONS, getZone, formatAQI } from '@/lib/aqi-utils';
@@ -14,6 +14,41 @@ export function useAQIData(options: UseAQIDataOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUsingLiveData, setIsUsingLiveData] = useState(false);
+  const lastStoredRef = useRef<number>(0);
+
+  // Store historical data (throttled to once per hour)
+  const storeHistoricalData = useCallback(async (stationData: StationData[]) => {
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    
+    if (now - lastStoredRef.current < oneHour) {
+      return; // Skip if stored within last hour
+    }
+    
+    try {
+      const records = stationData.map((station) => ({
+        station_id: station.id,
+        station_name: station.name,
+        aqi: station.aqi,
+        zone: station.zone,
+        pm25: station.pollutants?.pm25 || null,
+        pm10: station.pollutants?.pm10 || null,
+        recorded_at: new Date().toISOString(),
+        source: 'live_api',
+      }));
+
+      const { error: insertError } = await supabase
+        .from('historical_aqi')
+        .insert(records);
+
+      if (!insertError) {
+        lastStoredRef.current = now;
+        console.log('Historical AQI data stored successfully');
+      }
+    } catch (err) {
+      console.error('Failed to store historical data:', err);
+    }
+  }, []);
 
   const generateMockData = useCallback((): StationData[] => {
     return DELHI_STATIONS.map((station) => {
@@ -75,6 +110,9 @@ export function useAQIData(options: UseAQIDataOptions = {}) {
       setLastUpdated(new Date());
       setIsUsingLiveData(true);
       console.log(`Loaded ${stationData.length} stations with live data`);
+      
+      // Store historical data asynchronously
+      storeHistoricalData(stationData);
     } catch (err) {
       console.warn('Failed to fetch live AQI data, using mock data:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');

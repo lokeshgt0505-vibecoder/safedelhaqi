@@ -2,17 +2,23 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { StationData } from '@/types/aqi';
-import { getAQIInfo, getZone } from '@/lib/aqi-utils';
+import { ForecastData } from '@/types/forecast';
+import { getAQIInfo } from '@/lib/aqi-utils';
 import { HeatmapLayer } from './map/HeatmapLayer';
 import { VoronoiLayer } from './map/VoronoiLayer';
 import { InfluenceBuffers } from './map/InfluenceBuffers';
+import { ForecastLayer } from './map/ForecastLayer';
 import { MapLayerControls, LayerVisibility } from './map/MapLayerControls';
 import { AreaInfoPopup } from './map/AreaInfoPopup';
+import { YearSlider } from './map/YearSlider';
 
 interface AQIMapProps {
   stations: StationData[];
   selectedStation?: StationData | null;
   onStationClick?: (station: StationData) => void;
+  forecast?: ForecastData | null;
+  forecastYear?: number;
+  onForecastYearChange?: (year: number) => void;
 }
 
 // Calculate distance between two points in km (Haversine formula)
@@ -159,7 +165,14 @@ function StationMarker({
   );
 }
 
-export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProps) {
+export function AQIMap({ 
+  stations, 
+  selectedStation, 
+  onStationClick,
+  forecast,
+  forecastYear,
+  onForecastYearChange,
+}: AQIMapProps) {
   // Delhi center coordinates
   const delhiCenter: [number, number] = [28.6139, 77.209];
 
@@ -169,6 +182,7 @@ export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProp
     heatmap: true,
     voronoi: false,
     buffers: false,
+    forecast: false,
   });
 
   // Area click popup state
@@ -178,6 +192,19 @@ export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProp
     distance: number;
     estimatedAQI: number;
   } | null>(null);
+
+  // Enable forecast layer when forecast data is available
+  useEffect(() => {
+    if (forecast && !layers.forecast) {
+      setLayers((prev) => ({ ...prev, forecast: true }));
+    }
+  }, [forecast]);
+
+  // Get forecast years
+  const forecastYears = useMemo(() => {
+    if (!forecast || forecast.forecasts.length === 0) return [];
+    return forecast.forecasts[0].yearlyPredictions.map((p) => p.year);
+  }, [forecast]);
 
   // Toggle layer visibility
   const handleToggleLayer = useCallback((layer: keyof LayerVisibility) => {
@@ -204,13 +231,17 @@ export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProp
   );
 
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden">
+    <div className="relative w-full h-full">
       {/* Layer controls */}
-      <MapLayerControls layers={layers} onToggleLayer={handleToggleLayer} />
+      <MapLayerControls 
+        layers={layers} 
+        onToggleLayer={handleToggleLayer}
+        showForecastToggle={!!forecast}
+      />
 
       <MapContainer
         center={delhiCenter}
-        zoom={10.5}
+        zoom={11}
         className="absolute inset-0 z-0"
         style={{ height: '100%', width: '100%' }}
       >
@@ -236,6 +267,19 @@ export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProp
         {/* Heatmap layer */}
         <HeatmapLayer stations={sortedStations} visible={layers.heatmap} />
 
+        {/* Forecast layer */}
+        {forecast && forecastYear && (
+          <ForecastLayer
+            forecast={forecast}
+            selectedYear={forecastYear}
+            visible={layers.forecast}
+            onStationClick={(stationId) => {
+              const station = stations.find((s) => s.id === stationId || s.name.toLowerCase().includes(stationId.split('-').slice(1).join(' ')));
+              if (station) onStationClick?.(station);
+            }}
+          />
+        )}
+
         {/* Station markers */}
         {layers.stations &&
           sortedStations.map((station) => (
@@ -246,9 +290,18 @@ export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProp
         <FlyToStation station={selectedStation} />
       </MapContainer>
 
+      {/* Year slider for forecast */}
+      {forecast && layers.forecast && forecastYear && onForecastYearChange && forecastYears.length > 0 && (
+        <YearSlider
+          years={forecastYears}
+          selectedYear={forecastYear}
+          onYearChange={onForecastYearChange}
+        />
+      )}
+
       {/* Area info popup */}
       {areaInfo && (
-        <div className="absolute bottom-4 left-4 z-[1000]">
+        <div className="absolute bottom-20 left-4 z-[1000]">
           <AreaInfoPopup
             station={areaInfo.station}
             distance={areaInfo.distance}
@@ -258,9 +311,6 @@ export function AQIMap({ stations, selectedStation, onStationClick }: AQIMapProp
           />
         </div>
       )}
-
-      {/* Gradient overlay for visual polish */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-background/20 to-transparent rounded-lg z-10" />
     </div>
   );
 }
