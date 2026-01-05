@@ -203,8 +203,8 @@ export function ComparisonView({ stations, forecast, onClose }: ComparisonViewPr
                       {/* Station Name */}
                       <div className="col-span-3">
                         <p className="font-medium text-sm">{data.station.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {data.station.city}
+                        <p className="text-xs text-muted-foreground">
+                          AQI Zone: {data.currentZone}
                         </p>
                       </div>
 
