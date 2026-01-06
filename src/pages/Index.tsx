@@ -6,15 +6,17 @@ import { StationSearch } from '@/components/StationSearch';
 import { ZoneLegend } from '@/components/ZoneLegend';
 import { ForecastPanel } from '@/components/forecast/ForecastPanel';
 import { ComparisonView } from '@/components/forecast/ComparisonView';
+import { SeasonalAnalysisPanel } from '@/components/seasonal/SeasonalAnalysisPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAQIData } from '@/hooks/useAQIData';
 import { useAQIForecast } from '@/hooks/useAQIForecast';
+import { useSeasonalAnalysis } from '@/hooks/useSeasonalAnalysis';
 import { useAlertSubscriptions } from '@/hooks/useAlertSubscriptions';
 import { useAuth } from '@/hooks/useAuth';
 import { StationData } from '@/types/aqi';
-import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare } from 'lucide-react';
+import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -23,11 +25,13 @@ const Index = () => {
   const [zoneFilter, setZoneFilter] = useState<'blue' | 'yellow' | 'red' | null>(null);
   const [showForecast, setShowForecast] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showSeasonalAnalysis, setShowSeasonalAnalysis] = useState(false);
   const [forecastYear, setForecastYear] = useState<number>(new Date().getFullYear() + 1);
 
   const { isAuthenticated } = useAuth();
   const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
   const { forecast, isLoading: isForecastLoading, generateForecast, clearForecast } = useAQIForecast();
+  const { analysis: seasonalAnalysis, isLoading: isSeasonalLoading, analyzeSeasonalPatterns } = useSeasonalAnalysis();
   const { subscriptions, addSubscription, deleteSubscription } = useAlertSubscriptions();
 
   const subscribedStationIds = useMemo(
@@ -86,6 +90,15 @@ const Index = () => {
 
   const handleCloseForecast = () => {
     setShowForecast(false);
+  };
+
+  const handleSeasonalAnalysis = async () => {
+    if (stations.length === 0) {
+      toast.error('No station data available');
+      return;
+    }
+    await analyzeSeasonalPatterns(stations);
+    setShowSeasonalAnalysis(true);
   };
 
   return (
@@ -195,6 +208,20 @@ const Index = () => {
                   Compare
                 </Button>
               )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSeasonalAnalysis}
+                disabled={isSeasonalLoading || stations.length === 0}
+              >
+                {isSeasonalLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Calendar className="h-4 w-4 mr-2" />
+                )}
+                Seasonal
+              </Button>
             </div>
           </div>
         </div>
@@ -271,6 +298,14 @@ const Index = () => {
           stations={stations}
           forecast={forecast}
           onClose={() => setShowComparison(false)}
+        />
+      )}
+
+      {/* Seasonal Analysis Panel */}
+      {showSeasonalAnalysis && seasonalAnalysis && (
+        <SeasonalAnalysisPanel
+          analysis={seasonalAnalysis}
+          onClose={() => setShowSeasonalAnalysis(false)}
         />
       )}
     </div>
