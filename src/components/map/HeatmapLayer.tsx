@@ -30,6 +30,18 @@ export function HeatmapLayer({ stations, visible }: HeatmapLayerProps) {
   useEffect(() => {
     if (!visible || stations.length === 0) return;
 
+    // Wait for map to have valid dimensions before creating heatmap
+    const container = map.getContainer();
+    if (!container || container.clientWidth === 0 || container.clientHeight === 0) {
+      return;
+    }
+
+    // Also check if map size is valid
+    const size = map.getSize();
+    if (size.x === 0 || size.y === 0) {
+      return;
+    }
+
     // Convert station data to heatmap format: [lat, lng, intensity]
     // Normalize AQI to 0-1 range for intensity (max AQI ~500)
     const heatData: Array<[number, number, number]> = stations.map((station) => [
