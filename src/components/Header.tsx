@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Wind, User, LogIn, LogOut, Bell, MapPin } from 'lucide-react';
+import { Wind, User, LogIn, LogOut, Bell, MapPin, FileText } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +43,12 @@ export function Header() {
             <Link to="/neighborhoods" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               Neighborhoods
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+            <Link to="/documentation" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Docs
             </Link>
           </Button>
           <ThemeToggle />
