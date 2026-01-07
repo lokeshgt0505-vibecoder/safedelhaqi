@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Alerts from "./pages/Alerts";
+import Neighborhoods from "./pages/Neighborhoods";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/alerts" element={<Alerts />} />
+            <Route path="/neighborhoods" element={<Neighborhoods />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
