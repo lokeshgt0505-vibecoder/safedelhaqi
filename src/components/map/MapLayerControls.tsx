@@ -1,4 +1,4 @@
-import { Layers, MapPin, Circle, Hexagon, Thermometer, TrendingUp } from 'lucide-react';
+import { Layers, MapPin, Circle, Hexagon, Thermometer, TrendingUp, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ export interface LayerVisibility {
   voronoi: boolean;
   buffers: boolean;
   forecast: boolean;
+  livability: boolean;
 }
 
 interface MapLayerControlsProps {
@@ -69,17 +70,25 @@ export function MapLayerControls({ layers, onToggleLayer, showForecastToggle }: 
             Influence Buffers
           </DropdownMenuCheckboxItem>
 
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Forecasting</DropdownMenuLabel>
+          
+          <DropdownMenuCheckboxItem
+            checked={layers.livability}
+            onCheckedChange={() => onToggleLayer('livability')}
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Livability Index
+          </DropdownMenuCheckboxItem>
+
           {showForecastToggle && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem
-                checked={layers.forecast}
-                onCheckedChange={() => onToggleLayer('forecast')}
-              >
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Forecast Zones
-              </DropdownMenuCheckboxItem>
-            </>
+            <DropdownMenuCheckboxItem
+              checked={layers.forecast}
+              onCheckedChange={() => onToggleLayer('forecast')}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              AI Forecast Zones
+            </DropdownMenuCheckboxItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
