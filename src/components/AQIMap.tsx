@@ -13,6 +13,7 @@ import { AreaInfoPopup } from './map/AreaInfoPopup';
 import { YearSlider } from './map/YearSlider';
 import { LivabilityVoronoiLayer } from './map/LivabilityVoronoiLayer';
 import { LivabilityLegend } from './map/LivabilityLegend';
+import { OnDemandVoronoiLayer } from './map/OnDemandVoronoiLayer';
 
 interface AQIMapProps {
   stations: StationData[];
@@ -273,8 +274,8 @@ export function AQIMap({
         {/* Heatmap layer */}
         <HeatmapLayer stations={sortedStations} visible={layers.heatmap} />
 
-        {/* Livability layer */}
-        <LivabilityVoronoiLayer
+        {/* On-Demand Livability layer - calculates on click */}
+        <OnDemandVoronoiLayer
           visible={layers.livability}
           selectedYear={livabilityYear}
         />
