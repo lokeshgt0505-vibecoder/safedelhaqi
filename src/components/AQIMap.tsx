@@ -11,6 +11,8 @@ import { ForecastLayer } from './map/ForecastLayer';
 import { MapLayerControls, LayerVisibility } from './map/MapLayerControls';
 import { AreaInfoPopup } from './map/AreaInfoPopup';
 import { YearSlider } from './map/YearSlider';
+import { LivabilityVoronoiLayer } from './map/LivabilityVoronoiLayer';
+import { LivabilityLegend } from './map/LivabilityLegend';
 
 interface AQIMapProps {
   stations: StationData[];
@@ -183,7 +185,11 @@ export function AQIMap({
     voronoi: false,
     buffers: false,
     forecast: false,
+    livability: false,
   });
+
+  // Livability year selection
+  const [livabilityYear, setLivabilityYear] = useState(2025);
 
   // Area click popup state
   const [areaInfo, setAreaInfo] = useState<{
@@ -267,6 +273,12 @@ export function AQIMap({
         {/* Heatmap layer */}
         <HeatmapLayer stations={sortedStations} visible={layers.heatmap} />
 
+        {/* Livability layer */}
+        <LivabilityVoronoiLayer
+          visible={layers.livability}
+          selectedYear={livabilityYear}
+        />
+
         {/* Forecast layer */}
         {forecast && forecastYear && (
           <ForecastLayer
@@ -290,8 +302,20 @@ export function AQIMap({
         <FlyToStation station={selectedStation} />
       </MapContainer>
 
+      {/* Livability Legend */}
+      <LivabilityLegend visible={layers.livability} />
+
+      {/* Year slider for livability */}
+      {layers.livability && (
+        <YearSlider
+          years={[2025, 2026, 2027, 2028, 2029]}
+          selectedYear={livabilityYear}
+          onYearChange={setLivabilityYear}
+        />
+      )}
+
       {/* Year slider for forecast */}
-      {forecast && layers.forecast && forecastYear && onForecastYearChange && forecastYears.length > 0 && (
+      {forecast && layers.forecast && !layers.livability && forecastYear && onForecastYearChange && forecastYears.length > 0 && (
         <YearSlider
           years={forecastYears}
           selectedYear={forecastYear}
