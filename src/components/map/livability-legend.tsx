@@ -1,5 +1,5 @@
 import { LIVABILITY_COLORS, LivabilityClass } from '@/types/livability';
-import { useLivabilityData } from '@/hooks/useLivabilityData';
+import { useLivabilityData } from '@/hooks/use-livability-data';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface LivabilityLegendProps {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Polygon, Tooltip, Popup } from 'react-leaflet';
 import { Delaunay } from 'd3-delaunay';
-import { useLivabilityData } from '@/hooks/useLivabilityData';
+import { useLivabilityData } from '@/hooks/use-livability-data';
 import { LIVABILITY_COLORS, LivabilityClass } from '@/types/livability';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';

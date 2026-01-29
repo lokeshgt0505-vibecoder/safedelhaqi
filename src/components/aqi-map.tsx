@@ -4,16 +4,16 @@ import 'leaflet/dist/leaflet.css';
 import { StationData } from '@/types/aqi';
 import { ForecastData } from '@/types/forecast';
 import { getAQIInfo } from '@/lib/aqi-utils';
-import { HeatmapLayer } from './map/HeatmapLayer';
-import { VoronoiLayer } from './map/VoronoiLayer';
-import { InfluenceBuffers } from './map/InfluenceBuffers';
-import { ForecastLayer } from './map/ForecastLayer';
-import { MapLayerControls, LayerVisibility } from './map/MapLayerControls';
-import { AreaInfoPopup } from './map/AreaInfoPopup';
-import { YearSlider } from './map/YearSlider';
-import { LivabilityVoronoiLayer } from './map/LivabilityVoronoiLayer';
-import { LivabilityLegend } from './map/LivabilityLegend';
-import { OnDemandVoronoiLayer } from './map/OnDemandVoronoiLayer';
+import { HeatmapLayer } from './map/heatmap-layer';
+import { VoronoiLayer } from './map/voronoi-layer';
+import { InfluenceBuffers } from './map/influence-buffers';
+import { ForecastLayer } from './map/forecast-layer';
+import { MapLayerControls, LayerVisibility } from './map/map-layer-controls';
+import { AreaInfoPopup } from './map/area-info-popup';
+import { YearSlider } from './map/year-slider';
+import { LivabilityVoronoiLayer } from './map/livability-voronoi-layer';
+import { LivabilityLegend } from './map/livability-legend';
+import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
 
 interface AQIMapProps {
   stations: StationData[];

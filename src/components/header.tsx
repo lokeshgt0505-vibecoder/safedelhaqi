@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Wind, User, LogIn, LogOut, Bell, MapPin, FileText } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/use-auth';
 
 export function Header() {
   const { user, isAuthenticated, signOut } = useAuth();

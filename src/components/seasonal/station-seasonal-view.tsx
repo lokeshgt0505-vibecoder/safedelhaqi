@@ -1,8 +1,8 @@
-import { StationSeasonalData } from '@/hooks/useSeasonalAnalysis';
+import { StationSeasonalData } from '@/hooks/use-seasonal-analysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MonthlyPatternChart } from './MonthlyPatternChart';
+import { MonthlyPatternChart } from './monthly-pattern-chart';
 import { MapPin, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface StationSeasonalViewProps {

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { SeasonalAnalysis } from '@/hooks/useSeasonalAnalysis';
-import { MonthlyPatternChart } from './MonthlyPatternChart';
-import { SeasonalOverview } from './SeasonalOverview';
-import { OutdoorCalendar } from './OutdoorCalendar';
-import { StationSeasonalView } from './StationSeasonalView';
+import { SeasonalAnalysis } from '@/hooks/use-seasonal-analysis';
+import { MonthlyPatternChart } from './monthly-pattern-chart';
+import { SeasonalOverview } from './seasonal-overview';
+import { OutdoorCalendar } from './outdoor-calendar';
+import { StationSeasonalView } from './station-seasonal-view';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { X, Calendar, BarChart3, MapPin, Sun } from 'lucide-react';
