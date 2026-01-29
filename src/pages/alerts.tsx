@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
+import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { useAuth } from '@/hooks/useAuth';
-import { useAlertSubscriptions } from '@/hooks/useAlertSubscriptions';
+import { useAuth } from '@/hooks/use-auth';
+import { useAlertSubscriptions } from '@/hooks/use-alert-subscriptions';
 import { Bell, BellOff, Trash2, MapPin, Loader2, AlertTriangle } from 'lucide-react';
 import { getAQIInfo } from '@/lib/aqi-utils';
 import { cn } from '@/lib/utils';

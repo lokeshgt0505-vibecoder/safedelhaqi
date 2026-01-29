@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ForecastData } from '@/types/forecast';
-import { ForecastChart } from './ForecastChart';
-import { ForecastStationList } from './ForecastStationList';
-import { ForecastExport } from './ForecastExport';
+import { ForecastChart } from './forecast-chart';
+import { ForecastStationList } from './forecast-station-list';
+import { ForecastExport } from './forecast-export';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { MonthlyPattern } from '@/hooks/useSeasonalAnalysis';
+import { MonthlyPattern } from '@/hooks/use-seasonal-analysis';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ComposedChart,

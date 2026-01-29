@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Header } from '@/components/Header';
-import { useAQIData } from '@/hooks/useAQIData';
-import { useAQIForecast, StationForecast } from '@/hooks/useAQIForecast';
+import { Header } from '@/components/header';
+import { useAQIData } from '@/hooks/use-aqi-data';
+import { useAQIForecast, StationForecast } from '@/hooks/use-aqi-forecast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

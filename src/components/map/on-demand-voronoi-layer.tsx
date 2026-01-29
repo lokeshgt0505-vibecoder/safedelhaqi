@@ -4,7 +4,7 @@ import { Delaunay } from 'd3-delaunay';
 import { DELHI_STATIONS } from '@/lib/aqi-utils';
 import { LIVABILITY_COLORS, LivabilityClass } from '@/types/livability';
 import { StationForecastResult } from '@/lib/forecasting-engine';
-import { useOnDemandLivability } from '@/hooks/useOnDemandLivability';
+import { useOnDemandLivability } from '@/hooks/use-on-demand-livability';
 import { TrendingUp, TrendingDown, Minus, Info, Loader2 } from 'lucide-react';
 import { 
   LineChart, 
