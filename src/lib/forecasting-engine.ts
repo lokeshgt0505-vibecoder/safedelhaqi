@@ -120,14 +120,33 @@ export interface StationForecastResult {
 /**
  * Deterministic seeded random number generator
  * Uses Mulberry32 algorithm with fixed seed
+ * IMPORTANT: This is a PURE function - same seed ALWAYS produces same sequence
  */
 function seededRandom(seed: number): () => number {
+  let state = seed;
   return function() {
-    let t = seed += 0x6D2B79F5;
+    state = (state + 0x6D2B79F5) | 0;
+    let t = state;
     t = Math.imul(t ^ t >>> 15, t | 1);
     t ^= t + Math.imul(t ^ t >>> 7, t | 61);
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
+}
+
+// Pre-computed cache for forecast results to ensure determinism across refreshes
+const FORECAST_CACHE = new Map<string, StationForecastResult>();
+
+/**
+ * Get cached forecast or compute it deterministically
+ * Ensures same station ALWAYS returns identical results
+ */
+function getOrComputeForecast(stationId: string, computeFn: () => StationForecastResult): StationForecastResult {
+  if (FORECAST_CACHE.has(stationId)) {
+    return FORECAST_CACHE.get(stationId)!;
+  }
+  const result = computeFn();
+  FORECAST_CACHE.set(stationId, result);
+  return result;
 }
 
 /**
@@ -155,6 +174,15 @@ function calculateRollingAverage(values: number[], window: number = 3): number {
  * Generate deterministic forecast for a station
  */
 export function generateStationForecast(stationId: string): StationForecastResult {
+  // Use cache to ensure determinism across refreshes
+  return getOrComputeForecast(stationId, () => computeStationForecast(stationId));
+}
+
+/**
+ * Internal computation function - called only once per station
+ * All random values are deterministically computed from station ID
+ */
+function computeStationForecast(stationId: string): StationForecastResult {
   const station = DELHI_STATIONS.find(s => s.id === stationId);
   const coefficients = STATION_COEFFICIENTS[stationId] || {
     baseMultiplier: 1.0,
@@ -164,6 +192,7 @@ export function generateStationForecast(stationId: string): StationForecastResul
   };
 
   // Deterministic random generator for this station
+  // Seed is computed from station ID - ALWAYS produces same sequence
   const stationSeed = MODEL_PARAMS.randomState + stationId.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   const random = seededRandom(stationSeed);
 

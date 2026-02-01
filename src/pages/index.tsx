@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Header } from '@/components/header';
 import { AQIMap } from '@/components/aqi-map';
 import { StationCard } from '@/components/station-card';
@@ -16,7 +16,7 @@ import { useSeasonalAnalysis } from '@/hooks/use-seasonal-analysis';
 import { useAlertSubscriptions } from '@/hooks/use-alert-subscriptions';
 import { useAuth } from '@/hooks/use-auth';
 import { StationData } from '@/types/aqi';
-import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar } from 'lucide-react';
+import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -100,6 +100,37 @@ const Index = () => {
     await analyzeSeasonalPatterns(stations);
     setShowSeasonalAnalysis(true);
   };
+
+  // Close selected station card
+  const handleCloseStation = useCallback(() => {
+    setSelectedStation(null);
+  }, []);
+
+  // Handle ESC key to close all modals/popups
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Close in order of z-index priority
+        if (showSeasonalAnalysis) {
+          setShowSeasonalAnalysis(false);
+        } else if (showComparison) {
+          setShowComparison(false);
+        } else if (showForecast) {
+          setShowForecast(false);
+        } else if (selectedStation) {
+          setSelectedStation(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSeasonalAnalysis, showComparison, showForecast, selectedStation]);
+
+  // Handle click outside station card to close it
+  const handleMapClick = useCallback(() => {
+    // This is handled by clicking on the map - deselect station
+    // Note: The map component handles its own click events
+  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -274,15 +305,28 @@ const Index = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Selected Station Card */}
+        {/* Selected Station Card - with close button */}
         {selectedStation && (
           <div className="absolute top-4 left-4 z-[1000] w-80 animate-slide-in-right">
-            <StationCard
-              station={selectedStation}
-              isSubscribed={subscribedStationIds.has(selectedStation.id)}
-              onSubscribe={handleSubscribe}
-              onUnsubscribe={handleUnsubscribe}
-            />
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border border-border shadow-md z-10 hover:bg-destructive hover:text-destructive-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCloseStation();
+                }}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+              <StationCard
+                station={selectedStation}
+                isSubscribed={subscribedStationIds.has(selectedStation.id)}
+                onSubscribe={handleSubscribe}
+                onUnsubscribe={handleUnsubscribe}
+              />
+            </div>
           </div>
         )}
       </div>

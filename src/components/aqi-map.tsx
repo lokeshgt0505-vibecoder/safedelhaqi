@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { StationData } from '@/types/aqi';
 import { ForecastData } from '@/types/forecast';
+import { StationForecastResult } from '@/lib/forecasting-engine';
 import { getAQIInfo } from '@/lib/aqi-utils';
 import { HeatmapLayer } from './map/heatmap-layer';
 import { VoronoiLayer } from './map/voronoi-layer';
@@ -14,6 +15,7 @@ import { YearSlider } from './map/year-slider';
 import { LivabilityVoronoiLayer } from './map/livability-voronoi-layer';
 import { LivabilityLegend } from './map/livability-legend';
 import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
+import { LivabilitySidePanel } from './map/livability-side-panel';
 
 interface AQIMapProps {
   stations: StationData[];
@@ -123,7 +125,7 @@ function MapClickHandler({ stations, onAreaClick }: MapClickHandlerProps) {
   return null;
 }
 
-// Station marker component
+// Station marker component - no Leaflet popup, uses external card
 function StationMarker({
   station,
   onClick,
@@ -149,22 +151,7 @@ function StationMarker({
           onClick?.(station);
         },
       }}
-    >
-      <Popup>
-        <div className="p-2 font-sans">
-          <h3 className="font-semibold text-base mb-1">{station.name}</h3>
-          <p className="text-sm text-gray-600">
-            AQI: <strong style={{ color: aqiInfo.color }}>{station.aqi}</strong>
-            <span
-              className="ml-2 px-2 py-0.5 rounded-full text-xs text-white"
-              style={{ backgroundColor: aqiInfo.color }}
-            >
-              {aqiInfo.label}
-            </span>
-          </p>
-        </div>
-      </Popup>
-    </CircleMarker>
+    />
   );
 }
 
@@ -192,6 +179,9 @@ export function AQIMap({
   // Livability year selection
   const [livabilityYear, setLivabilityYear] = useState(2025);
 
+  // Livability side panel state
+  const [livabilityForecast, setLivabilityForecast] = useState<StationForecastResult | null>(null);
+
   // Area click popup state
   const [areaInfo, setAreaInfo] = useState<{
     position: [number, number];
@@ -199,6 +189,18 @@ export function AQIMap({
     distance: number;
     estimatedAQI: number;
   } | null>(null);
+
+  // Handle ESC key to close popups
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAreaInfo(null);
+        setLivabilityForecast(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Enable forecast layer when forecast data is available
   useEffect(() => {
@@ -274,10 +276,11 @@ export function AQIMap({
         {/* Heatmap layer */}
         <HeatmapLayer stations={sortedStations} visible={layers.heatmap} />
 
-        {/* On-Demand Livability layer - calculates on click */}
+        {/* On-Demand Livability layer - calculates on click, shows side panel */}
         <OnDemandVoronoiLayer
           visible={layers.livability}
           selectedYear={livabilityYear}
+          onStationSelect={setLivabilityForecast}
         />
 
         {/* Forecast layer */}
@@ -305,6 +308,14 @@ export function AQIMap({
 
       {/* Livability Legend */}
       <LivabilityLegend visible={layers.livability} />
+
+      {/* Livability Side Panel - never overlaps map */}
+      {layers.livability && (
+        <LivabilitySidePanel 
+          forecast={livabilityForecast} 
+          onClose={() => setLivabilityForecast(null)} 
+        />
+      )}
 
       {/* Year slider for livability */}
       {layers.livability && (
