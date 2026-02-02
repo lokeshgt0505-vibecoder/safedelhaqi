@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, CircleMarker, useMap, useMapEvents } from 'rea
 import 'leaflet/dist/leaflet.css';
 import { StationData } from '@/types/aqi';
 import { ForecastData } from '@/types/forecast';
-import { StationForecastResult } from '@/lib/forecasting-engine';
+import { StationForecastResult, generateStationForecast } from '@/lib/forecasting-engine';
 import { getAQIInfo } from '@/lib/aqi-utils';
 import { HeatmapLayer } from './map/heatmap-layer';
 import { VoronoiLayer } from './map/voronoi-layer';
@@ -12,11 +12,11 @@ import { ForecastLayer } from './map/forecast-layer';
 import { MapLayerControls, LayerVisibility } from './map/map-layer-controls';
 import { AreaInfoPopup } from './map/area-info-popup';
 import { YearSlider } from './map/year-slider';
-import { LivabilityVoronoiLayer } from './map/livability-voronoi-layer';
 import { LivabilityLegend } from './map/livability-legend';
 import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
 import { LivabilitySidePanel } from './map/livability-side-panel';
-
+import { AreaLivabilityCard } from './map/area-livability-card';
+import { mapAreaToStation, AreaStationResult } from '@/lib/area-station-mapping';
 interface AQIMapProps {
   stations: StationData[];
   selectedStation?: StationData | null;
@@ -182,7 +182,14 @@ export function AQIMap({
   // Livability side panel state
   const [livabilityForecast, setLivabilityForecast] = useState<StationForecastResult | null>(null);
 
-  // Area click popup state
+  // Area livability card state (for click-anywhere functionality)
+  const [areaLivability, setAreaLivability] = useState<{
+    position: [number, number];
+    mapping: AreaStationResult;
+    forecast: StationForecastResult | null;
+  } | null>(null);
+
+  // Area click popup state (for non-livability mode)
   const [areaInfo, setAreaInfo] = useState<{
     position: [number, number];
     station: StationData;
@@ -196,6 +203,7 @@ export function AQIMap({
       if (e.key === 'Escape') {
         setAreaInfo(null);
         setLivabilityForecast(null);
+        setAreaLivability(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -220,7 +228,7 @@ export function AQIMap({
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
-  // Handle area click
+  // Handle area click - different behavior based on livability layer
   const handleAreaClick = useCallback(
     (info: {
       position: [number, number];
@@ -228,9 +236,32 @@ export function AQIMap({
       distance: number;
       estimatedAQI: number;
     }) => {
-      setAreaInfo(info);
+      // If livability layer is ON, show area livability card instead
+      if (layers.livability) {
+        const [lat, lng] = info.position;
+        const mapping = mapAreaToStation(lat, lng, {
+          voronoi: layers.voronoi,
+          buffers: layers.buffers,
+        });
+        
+        // Get cached forecast or compute it
+        const forecast = generateStationForecast(mapping.stationId);
+        
+        setAreaLivability({
+          position: info.position,
+          mapping,
+          forecast,
+        });
+        // Close other popups when opening area livability
+        setAreaInfo(null);
+        setLivabilityForecast(null);
+      } else {
+        // Normal behavior: show regular area info popup
+        setAreaInfo(info);
+        setAreaLivability(null);
+      }
     },
-    []
+    [layers.livability, layers.voronoi, layers.buffers]
   );
 
   // Memoize sorted stations for consistent rendering
@@ -335,8 +366,8 @@ export function AQIMap({
         />
       )}
 
-      {/* Area info popup */}
-      {areaInfo && (
+      {/* Area info popup (non-livability mode) */}
+      {areaInfo && !layers.livability && (
         <div className="absolute bottom-20 left-4 z-[1000]">
           <AreaInfoPopup
             station={areaInfo.station}
@@ -344,6 +375,19 @@ export function AQIMap({
             estimatedAQI={areaInfo.estimatedAQI}
             position={areaInfo.position}
             onClose={() => setAreaInfo(null)}
+          />
+        </div>
+      )}
+
+      {/* Area Livability Card (livability mode) */}
+      {areaLivability && layers.livability && (
+        <div className="absolute bottom-20 left-4 z-[1000]">
+          <AreaLivabilityCard
+            clickedPosition={areaLivability.position}
+            areaMapping={areaLivability.mapping}
+            stationForecast={areaLivability.forecast}
+            selectedYear={livabilityYear}
+            onClose={() => setAreaLivability(null)}
           />
         </div>
       )}
