@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X, MapPin, Building2, Leaf, AlertTriangle } from 'lucide-react';
+import { X, MapPin, Building2, Leaf, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { getZone, getZoneInfo } from '@/lib/aqi-utils';
 import { AreaStationResult, getReasonText } from '@/lib/area-station-mapping';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LIVABILITY_COLORS, LivabilityClass } from '@/types/livability';
+import { AreaForecastChart } from './area-forecast-chart';
 
 interface AreaLivabilityCardProps {
   clickedPosition: [number, number];
@@ -157,6 +158,19 @@ export function AreaLivabilityCard({
             </span>
           </div>
         </div>
+
+        {/* AQI Trend Chart */}
+        {stationForecast && (
+          <div className="border-t pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                AQI Trend (2020-2029)
+              </span>
+            </div>
+            <AreaForecastChart forecast={stationForecast} selectedYear={selectedYear} />
+          </div>
+        )}
 
         {/* Zone Recommendation */}
         <div className="text-xs text-muted-foreground border-t pt-3">
