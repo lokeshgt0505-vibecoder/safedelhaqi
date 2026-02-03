@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StationData } from '@/types/aqi';
 import { ForecastData } from '@/types/forecast';
-import { ArrowRight, TrendingUp, TrendingDown, Minus, X, AlertCircle, Info, ShieldCheck } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Minus, X, AlertCircle, Info, ShieldCheck, ChevronDown, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TrendDistributionChart } from './trend-distribution-chart';
 
 interface ComparisonViewProps {
   stations: StationData[];
@@ -326,6 +328,22 @@ export function ComparisonView({ stations, forecast, onClose }: ComparisonViewPr
               <span>{summary.unavailable} station(s) excluded due to missing prediction data</span>
             </div>
           )}
+
+          {/* Trend Distribution Chart - Collapsible */}
+          <Collapsible className="mt-4">
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span>View Trend Distribution Chart</span>
+                </div>
+                <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <TrendDistributionChart stations={stations} forecast={forecast} />
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Comparison Table */}
