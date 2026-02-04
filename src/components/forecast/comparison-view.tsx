@@ -12,6 +12,7 @@ import { ArrowRight, TrendingUp, TrendingDown, Minus, X, AlertCircle, Info, Shie
 import { cn } from '@/lib/utils';
 import { TrendDistributionChart } from './trend-distribution-chart';
 import { ZoneDistributionChart } from './zone-distribution-chart';
+import { PredictionReliabilityIndicator } from './prediction-reliability-indicator';
 
 interface ComparisonViewProps {
   stations: StationData[];
@@ -330,8 +331,15 @@ export function ComparisonView({ stations, forecast, onClose }: ComparisonViewPr
             </div>
           )}
 
-          {/* Charts - Side by Side */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Charts and Reliability Indicator */}
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Prediction Reliability Indicator */}
+            <PredictionReliabilityIndicator 
+              stations={stations} 
+              forecast={forecast} 
+              selectedYear={selectedYear} 
+            />
+
             {/* Zone Distribution Pie Chart */}
             <ZoneDistributionChart 
               stations={stations} 
