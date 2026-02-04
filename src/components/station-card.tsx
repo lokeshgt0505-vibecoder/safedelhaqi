@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bell, BellOff, MapPin, Wind, Droplets } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AQIContributors } from '@/components/aqi-contributors';
 
 interface StationCardProps {
   station: StationData;
@@ -106,6 +107,12 @@ export function StationCard({
                 <span className="font-medium">{station.pollutants.no2}</span>
               </div>
             )}
+          </div>
+        )}
+
+        {!compact && (
+          <div className="border-t border-border pt-3 mt-3">
+            <AQIContributors stationId={station.id} aqi={station.aqi} />
           </div>
         )}
 
