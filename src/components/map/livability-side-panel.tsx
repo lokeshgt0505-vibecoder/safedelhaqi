@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   ReferenceLine 
 } from 'recharts';
+import { AQIContributors } from '@/components/aqi-contributors';
 
 interface LivabilitySidePanelProps {
   forecast: StationForecastResult | null;
@@ -188,6 +189,15 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
                 );
               })}
             </div>
+          </div>
+
+          {/* AQI Contributing Factors */}
+          <div className="border-t border-border pt-4">
+            <AQIContributors 
+              stationId={forecast.stationId} 
+              aqi={forecast.forecasts[0]?.predictedAqi || 0} 
+              trend={forecast.overallTrend}
+            />
           </div>
 
           {/* Suitability Answer */}

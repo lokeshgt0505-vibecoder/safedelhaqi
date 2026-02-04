@@ -8,6 +8,7 @@ import { AreaStationResult, getReasonText } from '@/lib/area-station-mapping';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LIVABILITY_COLORS, LivabilityClass } from '@/types/livability';
 import { AreaForecastChart } from './area-forecast-chart';
+import { AQIContributors } from '@/components/aqi-contributors';
 
 interface AreaLivabilityCardProps {
   clickedPosition: [number, number];
@@ -171,6 +172,15 @@ export function AreaLivabilityCard({
             <AreaForecastChart forecast={stationForecast} selectedYear={selectedYear} />
           </div>
         )}
+
+        {/* AQI Contributing Factors */}
+        <div className="border-t pt-3">
+          <AQIContributors 
+            stationId={areaMapping.stationId} 
+            aqi={predictedAqi} 
+            trend={stationForecast?.overallTrend}
+          />
+        </div>
 
         {/* Zone Recommendation */}
         <div className="text-xs text-muted-foreground border-t pt-3">
