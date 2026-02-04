@@ -8,9 +8,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { StationData } from '@/types/aqi';
 import { ForecastData } from '@/types/forecast';
-import { ArrowRight, TrendingUp, TrendingDown, Minus, X, AlertCircle, Info, ShieldCheck, ChevronDown, BarChart3 } from 'lucide-react';
+import { ArrowRight, TrendingUp, TrendingDown, Minus, X, AlertCircle, Info, ShieldCheck, ChevronDown, BarChart3, PieChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TrendDistributionChart } from './trend-distribution-chart';
+import { ZoneDistributionChart } from './zone-distribution-chart';
 
 interface ComparisonViewProps {
   stations: StationData[];
@@ -329,21 +330,18 @@ export function ComparisonView({ stations, forecast, onClose }: ComparisonViewPr
             </div>
           )}
 
-          {/* Trend Distribution Chart - Collapsible */}
-          <Collapsible className="mt-4">
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full justify-between">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  <span>View Trend Distribution Chart</span>
-                </div>
-                <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3">
-              <TrendDistributionChart stations={stations} forecast={forecast} />
-            </CollapsibleContent>
-          </Collapsible>
+          {/* Charts - Side by Side */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Zone Distribution Pie Chart */}
+            <ZoneDistributionChart 
+              stations={stations} 
+              forecast={forecast} 
+              selectedYear={selectedYear} 
+            />
+
+            {/* Trend Distribution Chart */}
+            <TrendDistributionChart stations={stations} forecast={forecast} />
+          </div>
         </div>
 
         {/* Comparison Table */}
