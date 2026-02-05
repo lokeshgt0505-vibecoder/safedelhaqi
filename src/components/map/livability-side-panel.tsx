@@ -1,7 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LIVABILITY_COLORS } from '@/types/livability';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { TrendingUp, TrendingDown, Minus, Info, X } from 'lucide-react';
 import { 
   LineChart, 
@@ -13,6 +15,8 @@ import {
   ReferenceLine 
 } from 'recharts';
 import { AQIContributors } from '@/components/aqi-contributors';
+import { TrendExplanation } from '@/components/trend-explanation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LivabilitySidePanelProps {
   forecast: StationForecastResult | null;
@@ -86,7 +90,7 @@ function MiniChart({ data }: { data: Array<{ year: number; aqi: number; type: st
   );
 }
 
-export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelProps) {
+function PanelContent({ forecast, onClose }: LivabilitySidePanelProps) {
   if (!forecast) return null;
 
   const chartData = [
@@ -102,8 +106,11 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
     })),
   ];
 
+  const currentAqi = forecast.historicalData[forecast.historicalData.length - 1]?.avgAqi || 0;
+  const predictedAqi = forecast.forecasts[0]?.predictedAqi || 0;
+
   return (
-    <div className="absolute top-0 right-0 w-80 h-full bg-card border-l border-border shadow-xl z-[1001] flex flex-col">
+    <>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-card">
         <div>
@@ -200,6 +207,16 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
             />
           </div>
 
+          {/* Trend Explanation */}
+          <div className="border-t border-border pt-4">
+            <TrendExplanation
+              trend={forecast.overallTrend}
+              currentAqi={currentAqi}
+              predictedAqi={predictedAqi}
+              stationId={forecast.stationId}
+            />
+          </div>
+
           {/* Suitability Answer */}
           <div 
             className="p-3 rounded-lg border-2" 
@@ -232,6 +249,64 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
           </div>
         </div>
       </ScrollArea>
+    </>
+  );
+}
+
+export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelProps) {
+  const isMobile = useIsMobile();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close
+  useEffect(() => {
+    if (!forecast) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        // Check if clicked on the map area (not on other UI elements)
+        const target = event.target as HTMLElement;
+        if (target.closest('.leaflet-container')) {
+          onClose();
+        }
+      }
+    };
+
+    // Delay adding listener to avoid immediate close
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [forecast, onClose]);
+
+  if (!forecast) return null;
+
+  // Mobile: render as bottom sheet
+  if (isMobile) {
+    return (
+      <Sheet open={!!forecast} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent side="bottom" className="h-[80vh] p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>{forecast.stationName} Livability Details</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col h-full">
+            <PanelContent forecast={forecast} onClose={onClose} />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: render as side panel
+  return (
+    <div 
+      ref={panelRef}
+      className="absolute top-0 right-0 w-80 h-full bg-card border-l border-border shadow-xl z-[1001] flex flex-col animate-in slide-in-from-right duration-200"
+    >
+      <PanelContent forecast={forecast} onClose={onClose} />
     </div>
   );
 }
