@@ -1,14 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X, MapPin, Building2, Leaf, AlertTriangle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { getZone, getZoneInfo } from '@/lib/aqi-utils';
 import { AreaStationResult, getReasonText } from '@/lib/area-station-mapping';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LIVABILITY_COLORS, LivabilityClass } from '@/types/livability';
 import { AreaForecastChart } from './area-forecast-chart';
 import { AQIContributors } from '@/components/aqi-contributors';
+import { TrendExplanation } from '@/components/trend-explanation';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AreaLivabilityCardProps {
   clickedPosition: [number, number];
@@ -37,22 +41,13 @@ function getLivabilityIcon(livabilityClass: LivabilityClass) {
   }
 }
 
-export function AreaLivabilityCard({
+function CardContentSection({
   clickedPosition,
   areaMapping,
   stationForecast,
   selectedYear,
   onClose,
 }: AreaLivabilityCardProps) {
-  // Handle ESC key and click outside
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   // Get the predicted AQI for the selected year
   const yearForecast = stationForecast?.forecasts.find(f => f.year === selectedYear);
   const predictedAqi = yearForecast?.predictedAqi || 0;
@@ -63,8 +58,10 @@ export function AreaLivabilityCard({
   const livabilityScore = stationForecast?.livabilityScore || 0;
   const colorConfig = LIVABILITY_COLORS[livabilityClass];
 
+  const currentAqi = stationForecast?.historicalData[stationForecast.historicalData.length - 1]?.avgAqi || 0;
+
   return (
-    <Card className="w-80 shadow-xl border-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
@@ -182,12 +179,104 @@ export function AreaLivabilityCard({
           />
         </div>
 
+        {/* Trend Explanation */}
+        {stationForecast && (
+          <div className="border-t pt-3">
+            <TrendExplanation
+              trend={stationForecast.overallTrend}
+              currentAqi={currentAqi}
+              predictedAqi={predictedAqi}
+              stationId={areaMapping.stationId}
+            />
+          </div>
+        )}
+
         {/* Zone Recommendation */}
         <div className="text-xs text-muted-foreground border-t pt-3">
           <p className="font-medium mb-1">{zoneInfo.label} Advisory:</p>
           <p>{zoneInfo.recommendation}</p>
         </div>
       </CardContent>
-    </Card>
+    </>
+  );
+}
+
+export function AreaLivabilityCard({
+  clickedPosition,
+  areaMapping,
+  stationForecast,
+  selectedYear,
+  onClose,
+}: AreaLivabilityCardProps) {
+  const isMobile = useIsMobile();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Handle ESC key and click outside
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(event.target as Node)) {
+        // Check if clicked on the map area
+        const target = event.target as HTMLElement;
+        if (target.closest('.leaflet-container')) {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Delay adding click listener to avoid immediate close
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
+  // Mobile: render as bottom sheet
+  if (isMobile) {
+    return (
+      <Sheet open={true} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent side="bottom" className="h-[80vh] p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Area Livability Analysis</SheetTitle>
+          </SheetHeader>
+          <ScrollArea className="h-full">
+            <Card className="border-0 shadow-none">
+              <CardContentSection
+                clickedPosition={clickedPosition}
+                areaMapping={areaMapping}
+                stationForecast={stationForecast}
+                selectedYear={selectedYear}
+                onClose={onClose}
+              />
+            </Card>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: render as floating card
+  return (
+    <div ref={cardRef}>
+      <Card className="w-80 shadow-xl border-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <CardContentSection
+          clickedPosition={clickedPosition}
+          areaMapping={areaMapping}
+          stationForecast={stationForecast}
+          selectedYear={selectedYear}
+          onClose={onClose}
+        />
+      </Card>
+    </div>
   );
 }
