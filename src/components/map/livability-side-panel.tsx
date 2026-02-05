@@ -257,42 +257,51 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
   const isMobile = useIsMobile();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside to close
+  // Handle click outside and escape key to close
   useEffect(() => {
     if (!forecast) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        // Check if clicked on the map area (not on other UI elements)
         const target = event.target as HTMLElement;
-        if (target.closest('.leaflet-container')) {
+        // Close if clicked on map or empty area
+        if (target.closest('.leaflet-container') || !target.closest('[data-radix-popper-content-wrapper]')) {
           onClose();
         }
       }
     };
 
-    // Delay adding listener to avoid immediate close
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    // Delay adding click listener to avoid immediate close
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
     }, 100);
+    
+    document.addEventListener('keydown', handleEscapeKey);
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [forecast, onClose]);
 
   if (!forecast) return null;
 
-  // Mobile: render as bottom sheet
+  // Mobile/Tablet: render as bottom sheet overlay
   if (isMobile) {
     return (
       <Sheet open={!!forecast} onOpenChange={(open) => !open && onClose()}>
-        <SheetContent side="bottom" className="h-[80vh] p-0">
+        <SheetContent side="bottom" className="h-[80vh] p-0 rounded-t-xl">
           <SheetHeader className="sr-only">
             <SheetTitle>{forecast.stationName} Livability Details</SheetTitle>
           </SheetHeader>
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full overflow-hidden">
             <PanelContent forecast={forecast} onClose={onClose} />
           </div>
         </SheetContent>
@@ -300,11 +309,11 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
     );
   }
 
-  // Desktop: render as side panel
+  // Desktop: render as overlay side panel (does not push map)
   return (
     <div 
       ref={panelRef}
-      className="absolute top-0 right-0 w-80 h-full bg-card border-l border-border shadow-xl z-[1001] flex flex-col animate-in slide-in-from-right duration-200"
+      className="fixed top-0 right-0 w-80 h-full bg-card border-l border-border shadow-2xl z-[1001] flex flex-col animate-in slide-in-from-right duration-200"
     >
       <PanelContent forecast={forecast} onClose={onClose} />
     </div>
