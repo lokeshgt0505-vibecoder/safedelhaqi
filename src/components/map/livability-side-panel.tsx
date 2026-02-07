@@ -309,11 +309,11 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
     );
   }
 
-  // Desktop: render as overlay side panel (does not push map)
+  // Desktop: render as fixed right sidebar below header (h-16 = 4rem = 64px)
   return (
     <div 
       ref={panelRef}
-      className="fixed top-0 right-0 w-80 h-full bg-card border-l border-border shadow-2xl z-[1001] flex flex-col animate-in slide-in-from-right duration-200"
+      className="fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] bg-card border-l border-border shadow-2xl z-[1001] flex flex-col animate-in slide-in-from-right duration-200"
     >
       <PanelContent forecast={forecast} onClose={onClose} />
     </div>
