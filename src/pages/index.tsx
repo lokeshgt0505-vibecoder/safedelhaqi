@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useLayoutEffect, useRef } from 'react';
 import { Header } from '@/components/header';
 import { AQIMap } from '@/components/aqi-map';
 import { StationCard } from '@/components/station-card';
@@ -21,12 +21,14 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const Index = () => {
+  const topChromeRef = useRef<HTMLDivElement>(null);
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [zoneFilter, setZoneFilter] = useState<'blue' | 'yellow' | 'red' | null>(null);
   const [showForecast, setShowForecast] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showSeasonalAnalysis, setShowSeasonalAnalysis] = useState(false);
   const [forecastYear, setForecastYear] = useState<number>(new Date().getFullYear() + 1);
+
 
   const { isAuthenticated } = useAuth();
   const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
@@ -126,6 +128,27 @@ const Index = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showSeasonalAnalysis, showComparison, showForecast, selectedStation]);
 
+  // Expose top chrome (header + control bar) height to fixed overlays (e.g., right sidebar)
+  useLayoutEffect(() => {
+    const el = topChromeRef.current;
+    if (!el) return;
+
+    const setOffset = () => {
+      const height = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--app-top-offset', `${Math.round(height)}px`);
+    };
+
+    setOffset();
+    const ro = new ResizeObserver(() => setOffset());
+    ro.observe(el);
+    window.addEventListener('resize', setOffset);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', setOffset);
+    };
+  }, []);
+
   // Handle click outside station card to close it
   const handleMapClick = useCallback(() => {
     // This is handled by clicking on the map - deselect station
@@ -134,10 +157,11 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <Header />
+      <div ref={topChromeRef}>
+        <Header />
 
-      {/* Top Control Bar */}
-      <div className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur-sm">
+        {/* Top Control Bar */}
+        <div className="flex-shrink-0 border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="px-4 py-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             {/* Left side - Stats */}
@@ -256,6 +280,7 @@ const Index = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Full Screen Map */}

@@ -309,11 +309,15 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
     );
   }
 
-  // Desktop: render as fixed right sidebar below header (h-16 = 4rem = 64px)
+  // Desktop: render as fixed right sidebar below header/top chrome
   return (
     <div 
       ref={panelRef}
-      className="fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] bg-card border-l border-border shadow-2xl z-[1001] flex flex-col animate-in slide-in-from-right duration-200"
+      className="fixed right-0 w-80 bg-card border-l border-border shadow-2xl z-40 flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
+      style={{
+        top: 'var(--app-top-offset, 64px)',
+        height: 'calc(100vh - var(--app-top-offset, 64px))',
+      }}
     >
       <PanelContent forecast={forecast} onClose={onClose} />
     </div>
