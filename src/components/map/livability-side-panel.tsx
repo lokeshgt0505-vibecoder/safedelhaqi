@@ -15,10 +15,14 @@ import {
 } from 'recharts';
 import { AQIContributors } from '@/components/aqi-contributors';
 import { TrendExplanation } from '@/components/trend-explanation';
+import { YearSlider } from './year-slider';
 
 interface LivabilitySidePanelProps {
   forecast: StationForecastResult | null;
   onClose: () => void;
+  selectedYear?: number;
+  onYearChange?: (year: number) => void;
+  years?: number[];
 }
 
 type DeviceType = 'mobile' | 'tablet' | 'desktop';
@@ -134,7 +138,17 @@ function PanelHeader({ title, subtitle, onClose }: { title: string; subtitle: st
   );
 }
 
-function PanelBody({ forecast }: { forecast: StationForecastResult }) {
+function PanelBody({ 
+  forecast, 
+  selectedYear, 
+  onYearChange, 
+  years 
+}: { 
+  forecast: StationForecastResult;
+  selectedYear?: number;
+  onYearChange?: (year: number) => void;
+  years?: number[];
+}) {
   const chartData = [
     ...forecast.historicalData.map(h => ({ 
       year: h.year, 
@@ -153,6 +167,15 @@ function PanelBody({ forecast }: { forecast: StationForecastResult }) {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Year Slider - integrated into panel */}
+      {years && years.length > 0 && selectedYear && onYearChange && (
+        <YearSlider
+          years={years}
+          selectedYear={selectedYear}
+          onYearChange={onYearChange}
+        />
+      )}
+
       {/* Score Badge */}
       <div className="flex items-center justify-between">
         <span 
@@ -277,54 +300,33 @@ function PanelBody({ forecast }: { forecast: StationForecastResult }) {
   );
 }
 
-export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelProps) {
+export function LivabilitySidePanel({ 
+  forecast, 
+  onClose,
+  selectedYear,
+  onYearChange,
+  years
+}: LivabilitySidePanelProps) {
   const deviceType = useDeviceType();
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside and escape key to close
+  // Handle escape key to close
   useEffect(() => {
     if (!forecast) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      
-      // For desktop: check if clicked outside panel on the map
-      if (deviceType === 'desktop' && panelRef.current) {
-        if (!panelRef.current.contains(target)) {
-          if (target.closest('.leaflet-container') || !target.closest('[data-radix-popper-content-wrapper]')) {
-            onClose();
-          }
-        }
-      }
-      
-      // For tablet: check if clicked on overlay background
-      if (deviceType === 'tablet' && overlayRef.current) {
-        if (target === overlayRef.current) {
-          onClose();
-        }
-      }
-    };
 
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
       }
     };
-
-    // Delay adding click listener to avoid immediate close
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
     
     document.addEventListener('keydown', handleEscapeKey);
 
     return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [forecast, onClose, deviceType]);
+  }, [forecast, onClose]);
 
   if (!forecast) return null;
 
@@ -346,7 +348,12 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
               onClose={onClose}
             />
             <div className="flex-1 overflow-y-auto overflow-x-hidden">
-              <PanelBody forecast={forecast} />
+              <PanelBody 
+                forecast={forecast} 
+                selectedYear={selectedYear}
+                onYearChange={onYearChange}
+                years={years}
+              />
             </div>
           </div>
         </SheetContent>
@@ -376,22 +383,24 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
             onClose={onClose}
           />
           <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <PanelBody forecast={forecast} />
+            <PanelBody 
+              forecast={forecast}
+              selectedYear={selectedYear}
+              onYearChange={onYearChange}
+              years={years}
+            />
           </div>
         </div>
       </div>
     );
   }
 
-  // Desktop (≥1024px): Fixed right sidebar
+  // Desktop (≥1024px): Flex-based right sidebar (not fixed overlay)
+  // This component is now placed IN the flex container, not as a fixed overlay
   return (
     <div 
       ref={panelRef}
-      className="fixed right-0 w-[380px] bg-card border-l border-border shadow-2xl z-[1000] flex flex-col animate-in slide-in-from-right duration-200"
-      style={{
-        top: '120px',
-        height: 'calc(100vh - 120px)',
-      }}
+      className="w-[380px] flex-shrink-0 bg-card border-l border-border shadow-lg flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
     >
       <PanelHeader 
         title={forecast.stationName}
@@ -399,7 +408,12 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
         onClose={onClose}
       />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <PanelBody forecast={forecast} />
+        <PanelBody 
+          forecast={forecast}
+          selectedYear={selectedYear}
+          onYearChange={onYearChange}
+          years={years}
+        />
       </div>
     </div>
   );

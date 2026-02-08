@@ -283,8 +283,8 @@ const Index = () => {
       </div>
       </div>
 
-      {/* Full Screen Map */}
-      <div className="flex-1 relative">
+      {/* Full Screen Map - flex-1 with overflow-hidden for proper flex layout */}
+      <div className="flex-1 relative overflow-hidden">
         <AQIMap
           stations={filteredStations}
           selectedStation={selectedStation}

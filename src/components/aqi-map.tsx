@@ -17,11 +17,10 @@ import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
 import { LivabilitySidePanel } from './map/livability-side-panel';
 import { AreaLivabilityCard } from './map/area-livability-card';
 import { mapAreaToStation, AreaStationResult } from '@/lib/area-station-mapping';
-import { cn } from '@/lib/utils';
 
-// Desktop breakpoint for sidebar behavior
+// Desktop/tablet breakpoint
 const DESKTOP_BREAKPOINT = 1024;
-const SIDEBAR_WIDTH = 380;
+const TABLET_BREAKPOINT = 768;
 
 interface AQIMapProps {
   stations: StationData[];
@@ -187,7 +186,7 @@ export function AQIMap({
   // Delhi center coordinates
   const delhiCenter: [number, number] = [28.6139, 77.209];
 
-  // Track if we're on desktop for sidebar behavior
+  // Track device type
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= DESKTOP_BREAKPOINT);
 
   useEffect(() => {
@@ -260,6 +259,11 @@ export function AQIMap({
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
+  // Handle close side panel
+  const handleCloseSidePanel = useCallback(() => {
+    setLivabilityForecast(null);
+  }, []);
+
   // Handle area click - different behavior based on livability layer
   const handleAreaClick = useCallback(
     (info: {
@@ -302,139 +306,149 @@ export function AQIMap({
     [stations]
   );
 
-  // Check if sidebar should shrink the map (desktop + livability panel open)
-  const isSidebarOpen = layers.livability && livabilityForecast && isDesktop;
+  // Check if sidebar should show (desktop + livability panel open with forecast)
+  const showDesktopSidebar = layers.livability && livabilityForecast && isDesktop;
+
+  // Livability years for slider
+  const livabilityYears = [2025, 2026, 2027, 2028, 2029];
 
   return (
-    <div className="relative w-full h-full">
-      {/* Layer controls */}
-      <MapLayerControls 
-        layers={layers} 
-        onToggleLayer={handleToggleLayer}
-        showForecastToggle={!!forecast}
-      />
+    <div className="relative w-full h-full flex">
+      {/* Map container - flex-1 to take remaining space */}
+      <div className="flex-1 relative min-w-0">
+        {/* Layer controls */}
+        <MapLayerControls 
+          layers={layers} 
+          onToggleLayer={handleToggleLayer}
+          showForecastToggle={!!forecast}
+        />
 
-      {/* Map container - shrinks on desktop when sidebar is open */}
-      <div 
-        className="absolute inset-0 transition-all duration-300 ease-in-out"
-        style={{
-          right: isSidebarOpen ? `${SIDEBAR_WIDTH}px` : 0,
-        }}
-      >
         <MapContainer
           center={delhiCenter}
           zoom={11}
           className="h-full w-full z-0"
         >
-        {/* OpenStreetMap tiles - completely free, no API key required */}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {/* Map click handler */}
-        <MapClickHandler stations={sortedStations} onAreaClick={handleAreaClick} />
-
-        {/* Voronoi coverage zones */}
-        <VoronoiLayer
-          stations={sortedStations}
-          visible={layers.voronoi}
-          onAreaClick={onStationClick}
-        />
-
-        {/* Influence buffers */}
-        <InfluenceBuffers stations={sortedStations} visible={layers.buffers} />
-
-        {/* Heatmap layer */}
-        <HeatmapLayer stations={sortedStations} visible={layers.heatmap} />
-
-        {/* On-Demand Livability layer - calculates on click, shows side panel */}
-        <OnDemandVoronoiLayer
-          visible={layers.livability}
-          selectedYear={livabilityYear}
-          onStationSelect={setLivabilityForecast}
-        />
-
-        {/* Forecast layer */}
-        {forecast && forecastYear && (
-          <ForecastLayer
-            forecast={forecast}
-            selectedYear={forecastYear}
-            visible={layers.forecast}
-            onStationClick={(stationId) => {
-              const station = stations.find((s) => s.id === stationId || s.name.toLowerCase().includes(stationId.split('-').slice(1).join(' ')));
-              if (station) onStationClick?.(station);
-            }}
+          {/* OpenStreetMap tiles - completely free, no API key required */}
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {/* Map click handler */}
+          <MapClickHandler stations={sortedStations} onAreaClick={handleAreaClick} />
+
+          {/* Voronoi coverage zones */}
+          <VoronoiLayer
+            stations={sortedStations}
+            visible={layers.voronoi}
+            onAreaClick={onStationClick}
+          />
+
+          {/* Influence buffers */}
+          <InfluenceBuffers stations={sortedStations} visible={layers.buffers} />
+
+          {/* Heatmap layer */}
+          <HeatmapLayer stations={sortedStations} visible={layers.heatmap} />
+
+          {/* On-Demand Livability layer - calculates on click, shows side panel */}
+          <OnDemandVoronoiLayer
+            visible={layers.livability}
+            selectedYear={livabilityYear}
+            onStationSelect={setLivabilityForecast}
+          />
+
+          {/* Forecast layer */}
+          {forecast && forecastYear && (
+            <ForecastLayer
+              forecast={forecast}
+              selectedYear={forecastYear}
+              visible={layers.forecast}
+              onStationClick={(stationId) => {
+                const station = stations.find((s) => s.id === stationId || s.name.toLowerCase().includes(stationId.split('-').slice(1).join(' ')));
+                if (station) onStationClick?.(station);
+              }}
+            />
+          )}
+
+          {/* Station markers */}
+          {layers.stations &&
+            sortedStations.map((station) => (
+              <StationMarker key={station.id} station={station} onClick={onStationClick} />
+            ))}
+
+          {/* Fly to selected station */}
+          <FlyToStation station={selectedStation} />
+
+          {/* Resize handler for sidebar open/close */}
+          <MapResizeHandler trigger={!!showDesktopSidebar} />
+        </MapContainer>
+
+        {/* Livability Legend - positioned inside map area */}
+        <LivabilityLegend visible={layers.livability} />
+
+        {/* Year slider for forecast (when NOT using livability) */}
+        {forecast && layers.forecast && !layers.livability && forecastYear && onForecastYearChange && forecastYears.length > 0 && (
+          <div className="absolute bottom-4 left-4 z-[500] max-w-xs">
+            <YearSlider
+              years={forecastYears}
+              selectedYear={forecastYear}
+              onYearChange={onForecastYearChange}
+            />
+          </div>
         )}
 
-        {/* Station markers */}
-        {layers.stations &&
-          sortedStations.map((station) => (
-            <StationMarker key={station.id} station={station} onClick={onStationClick} />
-          ))}
+        {/* Area info popup (non-livability mode) */}
+        {areaInfo && !layers.livability && (
+          <div className="absolute bottom-20 left-4 z-[500]">
+            <AreaInfoPopup
+              station={areaInfo.station}
+              distance={areaInfo.distance}
+              estimatedAQI={areaInfo.estimatedAQI}
+              position={areaInfo.position}
+              onClose={() => setAreaInfo(null)}
+            />
+          </div>
+        )}
 
-        {/* Fly to selected station */}
-        <FlyToStation station={selectedStation} />
-
-        {/* Resize handler for sidebar open/close */}
-        <MapResizeHandler trigger={!!isSidebarOpen} />
-      </MapContainer>
+        {/* Area Livability Card (livability mode) */}
+        {areaLivability && layers.livability && (
+          <div className="absolute bottom-20 left-4 z-[500]">
+            <AreaLivabilityCard
+              clickedPosition={areaLivability.position}
+              areaMapping={areaLivability.mapping}
+              stationForecast={areaLivability.forecast}
+              selectedYear={livabilityYear}
+              onClose={() => setAreaLivability(null)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Livability Legend */}
-      <LivabilityLegend visible={layers.livability} />
-
-      {/* Livability Side Panel - positioned outside of map container */}
+      {/* Livability Side Panel - flex-based sidebar for desktop, overlay for tablet/mobile */}
       {layers.livability && (
-        <LivabilitySidePanel 
-          forecast={livabilityForecast} 
-          onClose={() => setLivabilityForecast(null)} 
-        />
-      )}
-
-      {/* Year slider for livability */}
-      {layers.livability && (
-        <YearSlider
-          years={[2025, 2026, 2027, 2028, 2029]}
-          selectedYear={livabilityYear}
-          onYearChange={setLivabilityYear}
-        />
-      )}
-
-      {/* Year slider for forecast */}
-      {forecast && layers.forecast && !layers.livability && forecastYear && onForecastYearChange && forecastYears.length > 0 && (
-        <YearSlider
-          years={forecastYears}
-          selectedYear={forecastYear}
-          onYearChange={onForecastYearChange}
-        />
-      )}
-
-      {/* Area info popup (non-livability mode) */}
-      {areaInfo && !layers.livability && (
-        <div className="absolute bottom-20 left-4 z-[1000]">
-          <AreaInfoPopup
-            station={areaInfo.station}
-            distance={areaInfo.distance}
-            estimatedAQI={areaInfo.estimatedAQI}
-            position={areaInfo.position}
-            onClose={() => setAreaInfo(null)}
-          />
-        </div>
-      )}
-
-      {/* Area Livability Card (livability mode) */}
-      {areaLivability && layers.livability && (
-        <div className="absolute bottom-20 left-4 z-[1000]">
-          <AreaLivabilityCard
-            clickedPosition={areaLivability.position}
-            areaMapping={areaLivability.mapping}
-            stationForecast={areaLivability.forecast}
-            selectedYear={livabilityYear}
-            onClose={() => setAreaLivability(null)}
-          />
-        </div>
+        <>
+          {/* Desktop: Flex sidebar */}
+          {isDesktop && livabilityForecast && (
+            <LivabilitySidePanel 
+              forecast={livabilityForecast} 
+              onClose={handleCloseSidePanel}
+              selectedYear={livabilityYear}
+              onYearChange={setLivabilityYear}
+              years={livabilityYears}
+            />
+          )}
+          
+          {/* Tablet/Mobile: Overlay (handled internally by LivabilitySidePanel) */}
+          {!isDesktop && livabilityForecast && (
+            <LivabilitySidePanel 
+              forecast={livabilityForecast} 
+              onClose={handleCloseSidePanel}
+              selectedYear={livabilityYear}
+              onYearChange={setLivabilityYear}
+              years={livabilityYears}
+            />
+          )}
+        </>
       )}
     </div>
   );
