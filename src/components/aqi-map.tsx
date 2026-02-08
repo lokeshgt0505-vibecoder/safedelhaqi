@@ -17,6 +17,12 @@ import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
 import { LivabilitySidePanel } from './map/livability-side-panel';
 import { AreaLivabilityCard } from './map/area-livability-card';
 import { mapAreaToStation, AreaStationResult } from '@/lib/area-station-mapping';
+import { cn } from '@/lib/utils';
+
+// Desktop breakpoint for sidebar behavior
+const DESKTOP_BREAKPOINT = 1024;
+const SIDEBAR_WIDTH = 380;
+
 interface AQIMapProps {
   stations: StationData[];
   selectedStation?: StationData | null;
@@ -97,6 +103,21 @@ function FlyToStation({ station }: { station: StationData | null | undefined }) 
   return null;
 }
 
+// Component to invalidate map size when container changes
+function MapResizeHandler({ trigger }: { trigger: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    // Delay to allow CSS transition to complete
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [trigger, map]);
+
+  return null;
+}
+
 // Component to handle map click events
 interface MapClickHandlerProps {
   stations: StationData[];
@@ -165,6 +186,17 @@ export function AQIMap({
 }: AQIMapProps) {
   // Delhi center coordinates
   const delhiCenter: [number, number] = [28.6139, 77.209];
+
+  // Track if we're on desktop for sidebar behavior
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= DESKTOP_BREAKPOINT);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= DESKTOP_BREAKPOINT);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Layer visibility state
   const [layers, setLayers] = useState<LayerVisibility>({
@@ -270,6 +302,9 @@ export function AQIMap({
     [stations]
   );
 
+  // Check if sidebar should shrink the map (desktop + livability panel open)
+  const isSidebarOpen = layers.livability && livabilityForecast && isDesktop;
+
   return (
     <div className="relative w-full h-full">
       {/* Layer controls */}
@@ -279,12 +314,18 @@ export function AQIMap({
         showForecastToggle={!!forecast}
       />
 
-      <MapContainer
-        center={delhiCenter}
-        zoom={11}
-        className="absolute inset-0 z-0"
-        style={{ height: '100%', width: '100%' }}
+      {/* Map container - shrinks on desktop when sidebar is open */}
+      <div 
+        className="absolute inset-0 transition-all duration-300 ease-in-out"
+        style={{
+          right: isSidebarOpen ? `${SIDEBAR_WIDTH}px` : 0,
+        }}
       >
+        <MapContainer
+          center={delhiCenter}
+          zoom={11}
+          className="h-full w-full z-0"
+        >
         {/* OpenStreetMap tiles - completely free, no API key required */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -335,12 +376,16 @@ export function AQIMap({
 
         {/* Fly to selected station */}
         <FlyToStation station={selectedStation} />
+
+        {/* Resize handler for sidebar open/close */}
+        <MapResizeHandler trigger={!!isSidebarOpen} />
       </MapContainer>
+      </div>
 
       {/* Livability Legend */}
       <LivabilityLegend visible={layers.livability} />
 
-      {/* Livability Side Panel - never overlaps map */}
+      {/* Livability Side Panel - positioned outside of map container */}
       {layers.livability && (
         <LivabilitySidePanel 
           forecast={livabilityForecast} 
