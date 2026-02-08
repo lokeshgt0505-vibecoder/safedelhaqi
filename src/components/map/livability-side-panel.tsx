@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LIVABILITY_COLORS } from '@/types/livability';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { TrendingUp, TrendingDown, Minus, Info, X } from 'lucide-react';
 import { 
@@ -16,11 +15,35 @@ import {
 } from 'recharts';
 import { AQIContributors } from '@/components/aqi-contributors';
 import { TrendExplanation } from '@/components/trend-explanation';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LivabilitySidePanelProps {
   forecast: StationForecastResult | null;
   onClose: () => void;
+}
+
+type DeviceType = 'mobile' | 'tablet' | 'desktop';
+
+function useDeviceType(): DeviceType {
+  const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
+
+  useEffect(() => {
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setDeviceType('mobile');
+      } else if (width < 1024) {
+        setDeviceType('tablet');
+      } else {
+        setDeviceType('desktop');
+      }
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  return deviceType;
 }
 
 function TrendIcon({ trend }: { trend: 'improving' | 'stable' | 'declining' }) {
@@ -90,9 +113,28 @@ function MiniChart({ data }: { data: Array<{ year: number; aqi: number; type: st
   );
 }
 
-function PanelContent({ forecast, onClose }: LivabilitySidePanelProps) {
-  if (!forecast) return null;
+function PanelHeader({ title, subtitle, onClose }: { title: string; subtitle: string; onClose: () => void }) {
+  return (
+    <div className="sticky top-0 flex items-center justify-between p-4 border-b border-border bg-card z-10">
+      <div className="min-w-0 flex-1">
+        <h3 className="font-bold text-base truncate">{title}</h3>
+        <span className="text-xs text-muted-foreground capitalize">
+          {subtitle}
+        </span>
+      </div>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={onClose}
+        className="flex-shrink-0 ml-2 hover:bg-destructive/10 hover:text-destructive"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
+function PanelBody({ forecast }: { forecast: StationForecastResult }) {
   const chartData = [
     ...forecast.historicalData.map(h => ({ 
       year: h.year, 
@@ -110,162 +152,155 @@ function PanelContent({ forecast, onClose }: LivabilitySidePanelProps) {
   const predictedAqi = forecast.forecasts[0]?.predictedAqi || 0;
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
-        <div>
-          <h3 className="font-bold text-base">{forecast.stationName}</h3>
-          <span className="text-xs text-muted-foreground capitalize">
-            {forecast.stationType} area
-          </span>
+    <div className="p-4 space-y-4">
+      {/* Score Badge */}
+      <div className="flex items-center justify-between">
+        <span 
+          className="px-3 py-1.5 rounded-lg text-sm font-bold text-white"
+          style={{ backgroundColor: LIVABILITY_COLORS[forecast.livabilityClass].fill }}
+        >
+          Score: {forecast.livabilityScore}/100
+        </span>
+        <div className="flex items-center gap-1">
+          <TrendIcon trend={forecast.overallTrend} />
+          <span className="text-xs capitalize">{forecast.overallTrend}</span>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
       </div>
 
-      {/* Content */}
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
-          {/* Score Badge */}
-          <div className="flex items-center justify-between">
-            <span 
-              className="px-3 py-1.5 rounded-lg text-sm font-bold text-white"
-              style={{ backgroundColor: LIVABILITY_COLORS[forecast.livabilityClass].fill }}
-            >
-              Score: {forecast.livabilityScore}/100
-            </span>
-            <div className="flex items-center gap-1">
-              <TrendIcon trend={forecast.overallTrend} />
-              <span className="text-xs capitalize">{forecast.overallTrend}</span>
-            </div>
-          </div>
+      {/* Livability Classification */}
+      <div 
+        className="flex items-center gap-2 p-3 rounded-lg" 
+        style={{ backgroundColor: `${LIVABILITY_COLORS[forecast.livabilityClass].fill}15` }}
+      >
+        <div 
+          className="w-3 h-3 rounded-full"
+          style={{ backgroundColor: LIVABILITY_COLORS[forecast.livabilityClass].fill }}
+        />
+        <span className="font-semibold text-sm">
+          {LIVABILITY_COLORS[forecast.livabilityClass].label}
+        </span>
+      </div>
 
-          {/* Livability Classification */}
-          <div 
-            className="flex items-center gap-2 p-3 rounded-lg" 
-            style={{ backgroundColor: `${LIVABILITY_COLORS[forecast.livabilityClass].fill}15` }}
-          >
-            <div 
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: LIVABILITY_COLORS[forecast.livabilityClass].fill }}
-            />
-            <span className="font-semibold text-sm">
-              {LIVABILITY_COLORS[forecast.livabilityClass].label}
-            </span>
-          </div>
-
-          {/* Chart */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              Historical + 5-Year Forecast
-            </p>
-            <MiniChart data={chartData} />
-            <div className="flex justify-center gap-4 text-xs text-muted-foreground mt-2">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>Historical
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-purple-500"></span>Predicted
-              </span>
-            </div>
-          </div>
-
-          {/* 5-Year Forecast Details */}
-          <div className="border-t border-border pt-4">
-            <p className="text-xs font-medium text-muted-foreground mb-3">5-Year AQI Forecast</p>
-            <div className="space-y-2">
-              {forecast.forecasts.map(f => {
-                const category = getAqiCategory(f.predictedAqi);
-                return (
-                  <div key={f.year} className="flex items-center justify-between text-xs">
-                    <span className="font-medium">{f.year}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">{f.predictedAqi}</span>
-                      <span 
-                        className="px-1.5 py-0.5 rounded text-white text-[10px]"
-                        style={{ backgroundColor: category.color }}
-                      >
-                        {category.label}
-                      </span>
-                      <span className="text-muted-foreground">
-                        ({Math.round(f.confidence * 100)}%)
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* AQI Contributing Factors */}
-          <div className="border-t border-border pt-4">
-            <AQIContributors 
-              stationId={forecast.stationId} 
-              aqi={forecast.forecasts[0]?.predictedAqi || 0} 
-              trend={forecast.overallTrend}
-            />
-          </div>
-
-          {/* Trend Explanation */}
-          <div className="border-t border-border pt-4">
-            <TrendExplanation
-              trend={forecast.overallTrend}
-              currentAqi={currentAqi}
-              predictedAqi={predictedAqi}
-              stationId={forecast.stationId}
-            />
-          </div>
-
-          {/* Suitability Answer */}
-          <div 
-            className="p-3 rounded-lg border-2" 
-            style={{ 
-              borderColor: LIVABILITY_COLORS[forecast.livabilityClass].fill,
-              backgroundColor: `${LIVABILITY_COLORS[forecast.livabilityClass].fill}10`
-            }}
-          >
-            <p className="text-xs font-semibold mb-1">
-              Is this place suitable for the next 5 years?
-            </p>
-            <p 
-              className="text-sm font-bold" 
-              style={{ color: LIVABILITY_COLORS[forecast.livabilityClass].fill }}
-            >
-              {forecast.livabilityClass === 'highly-livable' 
-                ? '✓ Yes, Recommended' 
-                : forecast.livabilityClass === 'moderately-livable'
-                ? '△ Yes, with precautions'
-                : '✗ Not Recommended'}
-            </p>
-          </div>
-
-          {/* Recommendation */}
-          <div className="p-3 bg-muted rounded-lg text-xs">
-            <div className="flex items-start gap-2">
-              <Info className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
-              <p className="text-muted-foreground">{forecast.recommendation}</p>
-            </div>
-          </div>
+      {/* Chart */}
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">
+          Historical + 5-Year Forecast
+        </p>
+        <MiniChart data={chartData} />
+        <div className="flex justify-center gap-4 text-xs text-muted-foreground mt-2">
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>Historical
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-purple-500"></span>Predicted
+          </span>
         </div>
-      </ScrollArea>
-    </>
+      </div>
+
+      {/* 5-Year Forecast Details */}
+      <div className="border-t border-border pt-4">
+        <p className="text-xs font-medium text-muted-foreground mb-3">5-Year AQI Forecast</p>
+        <div className="space-y-2">
+          {forecast.forecasts.map(f => {
+            const category = getAqiCategory(f.predictedAqi);
+            return (
+              <div key={f.year} className="flex items-center justify-between text-xs">
+                <span className="font-medium">{f.year}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">{f.predictedAqi}</span>
+                  <span 
+                    className="px-1.5 py-0.5 rounded text-white text-[10px]"
+                    style={{ backgroundColor: category.color }}
+                  >
+                    {category.label}
+                  </span>
+                  <span className="text-muted-foreground">
+                    ({Math.round(f.confidence * 100)}%)
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* AQI Contributing Factors */}
+      <div className="border-t border-border pt-4">
+        <AQIContributors 
+          stationId={forecast.stationId} 
+          aqi={forecast.forecasts[0]?.predictedAqi || 0} 
+          trend={forecast.overallTrend}
+        />
+      </div>
+
+      {/* Trend Explanation */}
+      <div className="border-t border-border pt-4">
+        <TrendExplanation
+          trend={forecast.overallTrend}
+          currentAqi={currentAqi}
+          predictedAqi={predictedAqi}
+          stationId={forecast.stationId}
+        />
+      </div>
+
+      {/* Suitability Answer */}
+      <div 
+        className="p-3 rounded-lg border-2" 
+        style={{ 
+          borderColor: LIVABILITY_COLORS[forecast.livabilityClass].fill,
+          backgroundColor: `${LIVABILITY_COLORS[forecast.livabilityClass].fill}10`
+        }}
+      >
+        <p className="text-xs font-semibold mb-1">
+          Is this place suitable for the next 5 years?
+        </p>
+        <p 
+          className="text-sm font-bold" 
+          style={{ color: LIVABILITY_COLORS[forecast.livabilityClass].fill }}
+        >
+          {forecast.livabilityClass === 'highly-livable' 
+            ? '✓ Yes, Recommended' 
+            : forecast.livabilityClass === 'moderately-livable'
+            ? '△ Yes, with precautions'
+            : '✗ Not Recommended'}
+        </p>
+      </div>
+
+      {/* Recommendation */}
+      <div className="p-3 bg-muted rounded-lg text-xs">
+        <div className="flex items-start gap-2">
+          <Info className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-muted-foreground">{forecast.recommendation}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelProps) {
-  const isMobile = useIsMobile();
+  const deviceType = useDeviceType();
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside and escape key to close
   useEffect(() => {
     if (!forecast) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        const target = event.target as HTMLElement;
-        // Close if clicked on map or empty area
-        if (target.closest('.leaflet-container') || !target.closest('[data-radix-popper-content-wrapper]')) {
+      const target = event.target as HTMLElement;
+      
+      // For desktop: check if clicked outside panel on the map
+      if (deviceType === 'desktop' && panelRef.current) {
+        if (!panelRef.current.contains(target)) {
+          if (target.closest('.leaflet-container') || !target.closest('[data-radix-popper-content-wrapper]')) {
+            onClose();
+          }
+        }
+      }
+      
+      // For tablet: check if clicked on overlay background
+      if (deviceType === 'tablet' && overlayRef.current) {
+        if (target === overlayRef.current) {
           onClose();
         }
       }
@@ -289,37 +324,83 @@ export function LivabilitySidePanel({ forecast, onClose }: LivabilitySidePanelPr
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [forecast, onClose]);
+  }, [forecast, onClose, deviceType]);
 
   if (!forecast) return null;
 
-  // Mobile/Tablet: render as bottom sheet overlay
-  if (isMobile) {
+  // Mobile (<768px): Bottom sheet
+  if (deviceType === 'mobile') {
     return (
       <Sheet open={!!forecast} onOpenChange={(open) => !open && onClose()}>
-        <SheetContent side="bottom" className="h-[80vh] p-0 rounded-t-xl">
+        <SheetContent 
+          side="bottom" 
+          className="h-[70vh] max-h-[70vh] p-0 rounded-t-2xl safe-area-inset-bottom"
+        >
           <SheetHeader className="sr-only">
             <SheetTitle>{forecast.stationName} Livability Details</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col h-full overflow-hidden">
-            <PanelContent forecast={forecast} onClose={onClose} />
+            <PanelHeader 
+              title={forecast.stationName}
+              subtitle={`${forecast.stationType} area`}
+              onClose={onClose}
+            />
+            <div className="flex-1 overflow-y-auto overflow-x-hidden">
+              <PanelBody forecast={forecast} />
+            </div>
           </div>
         </SheetContent>
       </Sheet>
     );
   }
 
-  // Desktop: render as fixed right sidebar below header + control bar (~120px)
+  // Tablet (768px–1023px): Centered floating drawer with overlay
+  if (deviceType === 'tablet') {
+    return (
+      <div 
+        ref={overlayRef}
+        className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+        onClick={(e) => {
+          if (e.target === overlayRef.current) {
+            onClose();
+          }
+        }}
+      >
+        <div 
+          ref={panelRef}
+          className="w-[90%] max-w-md max-h-[80vh] bg-card rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        >
+          <PanelHeader 
+            title={forecast.stationName}
+            subtitle={`${forecast.stationType} area`}
+            onClose={onClose}
+          />
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
+            <PanelBody forecast={forecast} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop (≥1024px): Fixed right sidebar
   return (
     <div 
       ref={panelRef}
-      className="fixed right-0 w-80 bg-card border-l border-border shadow-2xl z-[1000] flex flex-col animate-in slide-in-from-right duration-200"
+      className="fixed right-0 w-[380px] bg-card border-l border-border shadow-2xl z-[1000] flex flex-col animate-in slide-in-from-right duration-200"
       style={{
-        top: 'var(--app-top-offset, 120px)',
-        height: 'calc(100vh - var(--app-top-offset, 120px))',
+        top: '120px',
+        height: 'calc(100vh - 120px)',
       }}
     >
-      <PanelContent forecast={forecast} onClose={onClose} />
+      <PanelHeader 
+        title={forecast.stationName}
+        subtitle={`${forecast.stationType} area`}
+        onClose={onClose}
+      />
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <PanelBody forecast={forecast} />
+      </div>
     </div>
   );
 }
