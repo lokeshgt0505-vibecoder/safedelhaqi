@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LIVABILITY_COLORS } from '@/types/livability';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import {
 import { AQIContributors } from '@/components/aqi-contributors';
 import { TrendExplanation } from '@/components/trend-explanation';
 import { YearSlider } from './year-slider';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LivabilitySidePanelProps {
   forecast: StationForecastResult | null;
@@ -23,31 +24,6 @@ interface LivabilitySidePanelProps {
   selectedYear?: number;
   onYearChange?: (year: number) => void;
   years?: number[];
-}
-
-type DeviceType = 'mobile' | 'tablet' | 'desktop';
-
-function useDeviceType(): DeviceType {
-  const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
-
-  useEffect(() => {
-    const checkDevice = () => {
-      const width = window.innerWidth;
-      if (width < 768) {
-        setDeviceType('mobile');
-      } else if (width < 1024) {
-        setDeviceType('tablet');
-      } else {
-        setDeviceType('desktop');
-      }
-    };
-
-    checkDevice();
-    window.addEventListener('resize', checkDevice);
-    return () => window.removeEventListener('resize', checkDevice);
-  }, []);
-
-  return deviceType;
 }
 
 function TrendIcon({ trend }: { trend: 'improving' | 'stable' | 'declining' }) {
@@ -167,7 +143,7 @@ function PanelBody({
 
   return (
     <div className="p-4 space-y-4">
-      {/* Year Slider - integrated into panel */}
+      {/* Year Slider */}
       {years && years.length > 0 && selectedYear && onYearChange && (
         <YearSlider
           years={years}
@@ -307,11 +283,10 @@ export function LivabilitySidePanel({
   onYearChange,
   years
 }: LivabilitySidePanelProps) {
-  const deviceType = useDeviceType();
+  const isMobile = useIsMobile();
   const panelRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Handle escape key to close
+  // Handle escape key and click outside
   useEffect(() => {
     if (!forecast) return;
 
@@ -320,23 +295,38 @@ export function LivabilitySidePanel({
         onClose();
       }
     };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        const target = event.target as HTMLElement;
+        // Only close if clicking on map area
+        if (target.closest('.leaflet-container')) {
+          onClose();
+        }
+      }
+    };
     
     document.addEventListener('keydown', handleEscapeKey);
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
 
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [forecast, onClose]);
 
   if (!forecast) return null;
 
-  // Mobile (<768px): Bottom sheet
-  if (deviceType === 'mobile') {
+  // Mobile: Bottom sheet
+  if (isMobile) {
     return (
       <Sheet open={!!forecast} onOpenChange={(open) => !open && onClose()}>
         <SheetContent 
           side="bottom" 
-          className="h-[70vh] max-h-[70vh] p-0 rounded-t-2xl safe-area-inset-bottom"
+          className="h-[70vh] max-h-[70vh] p-0 rounded-t-2xl"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>{forecast.stationName} Livability Details</SheetTitle>
@@ -361,46 +351,11 @@ export function LivabilitySidePanel({
     );
   }
 
-  // Tablet (768px–1023px): Centered floating drawer with overlay
-  if (deviceType === 'tablet') {
-    return (
-      <div 
-        ref={overlayRef}
-        className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-        onClick={(e) => {
-          if (e.target === overlayRef.current) {
-            onClose();
-          }
-        }}
-      >
-        <div 
-          ref={panelRef}
-          className="w-[90%] max-w-md max-h-[80vh] bg-card rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
-        >
-          <PanelHeader 
-            title={forecast.stationName}
-            subtitle={`${forecast.stationType} area`}
-            onClose={onClose}
-          />
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <PanelBody 
-              forecast={forecast}
-              selectedYear={selectedYear}
-              onYearChange={onYearChange}
-              years={years}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Desktop (≥1024px): Flex-based right sidebar (not fixed overlay)
-  // This component is now placed IN the flex container, not as a fixed overlay
+  // Desktop/Tablet: Flex-based right sidebar rendered by parent
   return (
     <div 
       ref={panelRef}
-      className="w-[380px] flex-shrink-0 bg-card border-l border-border shadow-lg flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
+      className="w-[380px] flex-shrink-0 h-full bg-card border-l border-border shadow-lg flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
     >
       <PanelHeader 
         title={forecast.stationName}
