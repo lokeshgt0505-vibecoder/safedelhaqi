@@ -26,7 +26,7 @@ interface MapLayerControlsProps {
 
 export function MapLayerControls({ layers, onToggleLayer, showForecastToggle }: MapLayerControlsProps) {
   return (
-    <div className="absolute top-4 right-16 z-[1000]">
+    <div className="absolute top-4 right-32 z-[1000]">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="sm" className="shadow-lg">
