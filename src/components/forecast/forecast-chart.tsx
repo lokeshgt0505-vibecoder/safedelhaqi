@@ -69,6 +69,8 @@ export function ForecastChart({ forecast, selectedStationId }: ForecastChartProp
       chartData: stationForecast.yearlyPredictions.map((p) => ({
         year: p.year,
         avgAqi: p.avgAqi,
+        upperBound: p.upperBound || Math.round(p.avgAqi * 1.15),
+        lowerBound: p.lowerBound || Math.round(p.avgAqi * 0.85),
         bestAqi: p.bestMonth.aqi,
         worstAqi: p.worstMonth.aqi,
         confidence: p.confidence,
@@ -203,12 +205,21 @@ export function ForecastChart({ forecast, selectedStationId }: ForecastChartProp
                   <Legend />
                   <ReferenceLine y={100} stroke="#22c55e" strokeDasharray="5 5" />
                   <ReferenceLine y={200} stroke="#ef4444" strokeDasharray="5 5" />
+                  {/* 95% Confidence Interval band */}
                   <Area
                     type="monotone"
-                    dataKey="worstAqi"
-                    fill="hsl(var(--destructive) / 0.1)"
+                    dataKey="upperBound"
+                    fill="hsl(var(--primary) / 0.08)"
                     stroke="transparent"
-                    name="Worst Month"
+                    name="95% CI Upper"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="lowerBound"
+                    fill="hsl(var(--background))"
+                    stroke="hsl(var(--primary) / 0.3)"
+                    strokeDasharray="3 3"
+                    name="95% CI Lower"
                   />
                   <Line
                     type="monotone"
