@@ -69,6 +69,8 @@ export function ForecastChart({ forecast, selectedStationId }: ForecastChartProp
       chartData: stationForecast.yearlyPredictions.map((p) => ({
         year: p.year,
         avgAqi: p.avgAqi,
+        upperBound: p.upperBound || Math.round(p.avgAqi * 1.15),
+        lowerBound: p.lowerBound || Math.round(p.avgAqi * 0.85),
         bestAqi: p.bestMonth.aqi,
         worstAqi: p.worstMonth.aqi,
         confidence: p.confidence,
