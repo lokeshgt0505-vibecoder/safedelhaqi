@@ -93,7 +93,7 @@ export function useAQIData(options: UseAQIDataOptions = {}) {
         throw new Error(data.error || 'Failed to fetch AQI data');
       }
 
-      const stationData: StationData[] = data.data.map((s: any) => {
+      const liveStations: StationData[] = data.data.map((s: any) => {
         const aqi = formatAQI(s.aqi);
         return {
           id: s.id,
@@ -106,13 +106,23 @@ export function useAQIData(options: UseAQIDataOptions = {}) {
         };
       });
 
-      setStations(stationData);
+      // If too few live stations returned, merge with mock data for remaining stations
+      const MIN_STATIONS = 5;
+      if (liveStations.length >= MIN_STATIONS) {
+        setStations(liveStations);
+        setIsUsingLiveData(true);
+        console.log(`Loaded ${liveStations.length} stations with live data`);
+        storeHistoricalData(liveStations);
+      } else {
+        console.warn(`Only ${liveStations.length} live stations returned, supplementing with mock data`);
+        const liveIds = new Set(liveStations.map(s => s.id));
+        const mockStations = generateMockData().filter(s => !liveIds.has(s.id));
+        const merged = [...liveStations, ...mockStations];
+        setStations(merged);
+        setIsUsingLiveData(liveStations.length > 0);
+        console.log(`Loaded ${liveStations.length} live + ${mockStations.length} mock stations`);
+      }
       setLastUpdated(new Date());
-      setIsUsingLiveData(true);
-      console.log(`Loaded ${stationData.length} stations with live data`);
-      
-      // Store historical data asynchronously
-      storeHistoricalData(stationData);
     } catch (err) {
       console.warn('Failed to fetch live AQI data, using mock data:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
