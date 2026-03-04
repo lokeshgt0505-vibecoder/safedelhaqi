@@ -1,37 +1,12 @@
 import { useState, useCallback } from 'react';
 import { StationData } from '@/types/aqi';
+import { ForecastData } from '@/types/forecast';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { generateAllStationForecasts, getCityWideStats, SEASONAL_PATTERNS } from '@/lib/forecasting-engine';
 
-export interface YearlyPrediction {
-  year: number;
-  avgAqi: number;
-  bestMonth: { month: string; aqi: number };
-  worstMonth: { month: string; aqi: number };
-  zone: 'blue' | 'yellow' | 'red';
-  livability: string;
-  confidence: number;
-}
-
-export interface StationForecast {
-  stationId: string;
-  stationName: string;
-  stationType: string;
-  yearlyPredictions: YearlyPrediction[];
-  trend: 'improving' | 'stable' | 'declining';
-  recommendation: string;
-}
-
-export interface CityOverview {
-  avgAqiByYear: Record<string, number>;
-  overallTrend: string;
-  keyInsights: string[];
-}
-
-export interface ForecastData {
-  forecasts: StationForecast[];
-  cityOverview: CityOverview;
-}
+// Re-export types from the canonical location
+export type { YearlyPrediction, StationForecast, CityOverview, ForecastData } from '@/types/forecast';
 
 // Helper to get zone from AQI
 function getZone(aqi: number): 'blue' | 'yellow' | 'red' {
@@ -40,7 +15,6 @@ function getZone(aqi: number): 'blue' | 'yellow' | 'red' {
   return 'red';
 }
 
-// Helper to get livability label from AQI
 function getLivabilityLabel(aqi: number): string {
   if (aqi <= 50) return 'Good';
   if (aqi <= 100) return 'Satisfactory';
@@ -50,7 +24,6 @@ function getLivabilityLabel(aqi: number): string {
   return 'Severe';
 }
 
-// Get month names
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function useAQIForecast() {
@@ -58,36 +31,50 @@ export function useAQIForecast() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateForecast = useCallback(async (_stations: StationData[]) => {
+  const generateForecast = useCallback(async (stations: StationData[]) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Use the local deterministic forecasting engine
+      // Try AI-powered forecast first
+      const stationPayload = stations.map(s => ({
+        id: s.id,
+        name: s.name,
+        aqi: s.aqi,
+        lat: s.lat,
+        lng: s.lng,
+      }));
+
+      const { data, error: fnError } = await supabase.functions.invoke('forecast-aqi', {
+        body: { stations: stationPayload, forecastYears: 11 },
+      });
+
+      if (!fnError && data && data.forecasts) {
+        setForecast(data as ForecastData);
+        toast.success('AI-powered ML forecast generated (XGBoost pipeline)');
+        return;
+      }
+
+      console.warn('AI forecast failed, falling back to local engine:', fnError?.message || 'No data');
+      // Fallback to local deterministic engine
       const allForecasts = generateAllStationForecasts();
       const cityStats = getCityWideStats();
 
-      // Convert to the expected format
-      const forecasts: StationForecast[] = allForecasts.map(stationForecast => {
-        const yearlyPredictions: YearlyPrediction[] = stationForecast.forecasts.map(fc => {
-          // Find best and worst months using seasonal patterns
+      const forecasts = allForecasts.map(stationForecast => {
+        const yearlyPredictions = stationForecast.forecasts.map(fc => {
           const monthlyAqi = Object.entries(SEASONAL_PATTERNS).map(([month, factor]) => ({
             month: MONTH_NAMES[parseInt(month) - 1],
             aqi: Math.round(fc.predictedAqi * factor)
           }));
-          
           const sortedMonths = [...monthlyAqi].sort((a, b) => a.aqi - b.aqi);
-          const bestMonth = sortedMonths[0];
-          const worstMonth = sortedMonths[sortedMonths.length - 1];
-
           return {
             year: fc.year,
             avgAqi: fc.predictedAqi,
-            bestMonth,
-            worstMonth,
+            bestMonth: sortedMonths[0],
+            worstMonth: sortedMonths[sortedMonths.length - 1],
             zone: getZone(fc.predictedAqi),
             livability: getLivabilityLabel(fc.predictedAqi),
-            confidence: fc.confidence
+            confidence: fc.confidence * 100
           };
         });
 
@@ -101,8 +88,7 @@ export function useAQIForecast() {
         };
       });
 
-      // Generate city overview
-      const cityOverview: CityOverview = {
+      const cityOverview = {
         avgAqiByYear: Object.fromEntries(
           Object.entries(cityStats.avgFutureAqi).map(([year, aqi]) => [year, aqi])
         ),
@@ -117,7 +103,7 @@ export function useAQIForecast() {
       };
 
       setForecast({ forecasts, cityOverview });
-      toast.success('5-year AQI forecast generated successfully');
+      toast.success('Forecast generated (local engine fallback)');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate forecast';
       setError(message);
@@ -132,11 +118,5 @@ export function useAQIForecast() {
     setError(null);
   }, []);
 
-  return {
-    forecast,
-    isLoading,
-    error,
-    generateForecast,
-    clearForecast
-  };
+  return { forecast, isLoading, error, generateForecast, clearForecast };
 }
