@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Wind, User, LogIn, LogOut, Bell, MapPin, FileText } from 'lucide-react';
+import { Wind, User, LogIn, LogOut, Bell, MapPin, FileText, BookOpen } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
