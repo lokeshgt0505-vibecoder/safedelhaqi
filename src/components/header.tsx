@@ -51,6 +51,12 @@ export function Header() {
               Docs
             </Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+            <Link to="/project-guide" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Guide
+            </Link>
+          </Button>
           <ThemeToggle />
 
           {isAuthenticated ? (
