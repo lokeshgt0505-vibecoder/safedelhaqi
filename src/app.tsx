@@ -9,6 +9,7 @@ import Auth from "./pages/auth";
 import Alerts from "./pages/alerts";
 import Neighborhoods from "./pages/neighborhoods";
 import Documentation from "./pages/documentation";
+import ProjectGuide from "./pages/project-guide";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/neighborhoods" element={<Neighborhoods />} />
             <Route path="/documentation" element={<Documentation />} />
+            <Route path="/project-guide" element={<ProjectGuide />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
