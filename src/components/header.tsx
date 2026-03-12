@@ -57,6 +57,12 @@ export function Header() {
               Guide
             </Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+            <Link to="/product-docs" className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Audit
+            </Link>
+          </Button>
           <ThemeToggle />
 
           {isAuthenticated ? (
