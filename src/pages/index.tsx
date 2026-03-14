@@ -32,6 +32,7 @@ const Index = () => {
   const [showForecast, setShowForecast] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showSeasonalAnalysis, setShowSeasonalAnalysis] = useState(false);
+  const [showWeeklyForecast, setShowWeeklyForecast] = useState(false);
   const [forecastYear, setForecastYear] = useState<number>(new Date().getFullYear() + 1);
 
   // Livability panel state - lifted from AQIMap
