@@ -13,6 +13,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAQIData } from '@/hooks/use-aqi-data';
 import { useAQIForecast } from '@/hooks/use-aqi-forecast';
 import { useSeasonalAnalysis } from '@/hooks/use-seasonal-analysis';
+import { useWeeklyForecast } from '@/hooks/use-weekly-forecast';
+import { WeeklyForecastPanel } from '@/components/forecast/weekly-forecast-panel';
 import { useAlertSubscriptions } from '@/hooks/use-alert-subscriptions';
 import { useAuth } from '@/hooks/use-auth';
 import { StationData } from '@/types/aqi';
