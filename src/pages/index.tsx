@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { StationData } from '@/types/aqi';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LayerVisibility } from '@/components/map/map-layer-controls';
-import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar, X } from 'lucide-react';
+import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar, X, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
