@@ -138,7 +138,9 @@ const Index = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showSeasonalAnalysis) {
+        if (showWeeklyForecast) {
+          setShowWeeklyForecast(false);
+        } else if (showSeasonalAnalysis) {
           setShowSeasonalAnalysis(false);
         } else if (showComparison) {
           setShowComparison(false);
@@ -153,7 +155,7 @@ const Index = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSeasonalAnalysis, showComparison, showForecast, selectedStation, livabilityForecast]);
+  }, [showWeeklyForecast, showSeasonalAnalysis, showComparison, showForecast, selectedStation, livabilityForecast]);
 
   const sidePanelOpen = !!livabilityForecast;
 
