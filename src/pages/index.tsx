@@ -390,8 +390,16 @@ const Index = () => {
             onYearChange={setLivabilityYear}
             years={LIVABILITY_YEARS}
           />
-        )}
-      </div>
+      )}
+
+      {/* Weekly Forecast Panel */}
+      {showWeeklyForecast && weeklyData && (
+        <WeeklyForecastPanel
+          data={weeklyData}
+          onClose={() => setShowWeeklyForecast(false)}
+        />
+      )}
+    </div>
 
       {/* Forecast Panel */}
       {showForecast && forecast && (
