@@ -109,6 +109,15 @@ const Index = () => {
     setShowSeasonalAnalysis(true);
   };
 
+  const handleWeeklyForecast = () => {
+    if (stations.length === 0) {
+      toast.error('No station data available');
+      return;
+    }
+    generateWeekly(stations);
+    setShowWeeklyForecast(true);
+  };
+
   const handleCloseStation = useCallback(() => {
     setSelectedStation(null);
   }, []);
