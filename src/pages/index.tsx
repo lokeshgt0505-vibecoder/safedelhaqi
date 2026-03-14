@@ -44,6 +44,7 @@ const Index = () => {
   const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
   const { forecast, isLoading: isForecastLoading, generateForecast, clearForecast } = useAQIForecast();
   const { analysis: seasonalAnalysis, isLoading: isSeasonalLoading, analyzeSeasonalPatterns } = useSeasonalAnalysis();
+  const { data: weeklyData, isLoading: isWeeklyLoading, generate: generateWeekly, clear: clearWeekly } = useWeeklyForecast();
   const { subscriptions, addSubscription, deleteSubscription } = useAlertSubscriptions();
 
   const subscribedStationIds = useMemo(
