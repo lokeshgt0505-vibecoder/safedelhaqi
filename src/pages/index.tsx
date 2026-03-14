@@ -13,12 +13,14 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAQIData } from '@/hooks/use-aqi-data';
 import { useAQIForecast } from '@/hooks/use-aqi-forecast';
 import { useSeasonalAnalysis } from '@/hooks/use-seasonal-analysis';
+import { useWeeklyForecast } from '@/hooks/use-weekly-forecast';
+import { WeeklyForecastPanel } from '@/components/forecast/weekly-forecast-panel';
 import { useAlertSubscriptions } from '@/hooks/use-alert-subscriptions';
 import { useAuth } from '@/hooks/use-auth';
 import { StationData } from '@/types/aqi';
 import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LayerVisibility } from '@/components/map/map-layer-controls';
-import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar, X } from 'lucide-react';
+import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar, X, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -30,6 +32,7 @@ const Index = () => {
   const [showForecast, setShowForecast] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showSeasonalAnalysis, setShowSeasonalAnalysis] = useState(false);
+  const [showWeeklyForecast, setShowWeeklyForecast] = useState(false);
   const [forecastYear, setForecastYear] = useState<number>(new Date().getFullYear() + 1);
 
   // Livability panel state - lifted from AQIMap
@@ -41,6 +44,7 @@ const Index = () => {
   const { stations, isLoading, lastUpdated, refresh, isUsingLiveData } = useAQIData();
   const { forecast, isLoading: isForecastLoading, generateForecast, clearForecast } = useAQIForecast();
   const { analysis: seasonalAnalysis, isLoading: isSeasonalLoading, analyzeSeasonalPatterns } = useSeasonalAnalysis();
+  const { data: weeklyData, isLoading: isWeeklyLoading, generate: generateWeekly, clear: clearWeekly } = useWeeklyForecast();
   const { subscriptions, addSubscription, deleteSubscription } = useAlertSubscriptions();
 
   const subscribedStationIds = useMemo(
@@ -105,6 +109,15 @@ const Index = () => {
     setShowSeasonalAnalysis(true);
   };
 
+  const handleWeeklyForecast = () => {
+    if (stations.length === 0) {
+      toast.error('No station data available');
+      return;
+    }
+    generateWeekly(stations);
+    setShowWeeklyForecast(true);
+  };
+
   const handleCloseStation = useCallback(() => {
     setSelectedStation(null);
   }, []);
@@ -125,7 +138,9 @@ const Index = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (showSeasonalAnalysis) {
+        if (showWeeklyForecast) {
+          setShowWeeklyForecast(false);
+        } else if (showSeasonalAnalysis) {
           setShowSeasonalAnalysis(false);
         } else if (showComparison) {
           setShowComparison(false);
@@ -140,7 +155,7 @@ const Index = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSeasonalAnalysis, showComparison, showForecast, selectedStation, livabilityForecast]);
+  }, [showWeeklyForecast, showSeasonalAnalysis, showComparison, showForecast, selectedStation, livabilityForecast]);
 
   const sidePanelOpen = !!livabilityForecast;
 
@@ -267,6 +282,20 @@ const Index = () => {
                   )}
                   Seasonal
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleWeeklyForecast}
+                  disabled={isWeeklyLoading || stations.length === 0}
+                >
+                  {isWeeklyLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                  )}
+                  7-Day
+                </Button>
               </div>
             </div>
           </div>
@@ -363,8 +392,16 @@ const Index = () => {
             onYearChange={setLivabilityYear}
             years={LIVABILITY_YEARS}
           />
-        )}
-      </div>
+      )}
+
+      {/* Weekly Forecast Panel */}
+      {showWeeklyForecast && weeklyData && (
+        <WeeklyForecastPanel
+          data={weeklyData}
+          onClose={() => setShowWeeklyForecast(false)}
+        />
+      )}
+    </div>
 
       {/* Forecast Panel */}
       {showForecast && forecast && (
