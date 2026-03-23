@@ -11,6 +11,7 @@ import Neighborhoods from "./pages/neighborhoods";
 import Documentation from "./pages/documentation";
 import ProjectGuide from "./pages/project-guide";
 import ProductDocs from "./pages/product-docs";
+import Architecture from "./pages/architecture";
 import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient();
