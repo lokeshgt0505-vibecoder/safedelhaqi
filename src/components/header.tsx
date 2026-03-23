@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Wind, User, LogIn, LogOut, Bell, MapPin, FileText, BookOpen, ClipboardList } from 'lucide-react';
+import { Wind, User, LogIn, LogOut, Bell, MapPin, FileText, BookOpen, ClipboardList, Network } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,6 +61,12 @@ export function Header() {
             <Link to="/product-docs" className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4" />
               Audit
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+            <Link to="/architecture" className="flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              Arch
             </Link>
           </Button>
           <ThemeToggle />
