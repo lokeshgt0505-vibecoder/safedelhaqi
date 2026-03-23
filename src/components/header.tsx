@@ -63,6 +63,12 @@ export function Header() {
               Audit
             </Link>
           </Button>
+          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+            <Link to="/architecture" className="flex items-center gap-2">
+              <Network className="h-4 w-4" />
+              Arch
+            </Link>
+          </Button>
           <ThemeToggle />
 
           {isAuthenticated ? (
