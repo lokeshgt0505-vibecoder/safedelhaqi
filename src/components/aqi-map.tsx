@@ -369,18 +369,6 @@ export function AQIMap({
         </div>
       )}
 
-      {/* Area Livability Card (livability mode) */}
-      {areaLivability && layers.livability && (
-        <div className="absolute bottom-20 left-4 z-[500]">
-          <AreaLivabilityCard
-            clickedPosition={areaLivability.position}
-            areaMapping={areaLivability.mapping}
-            stationForecast={areaLivability.forecast}
-            selectedYear={livabilityYear}
-            onClose={() => setAreaLivability(null)}
-          />
-        </div>
-      )}
     </div>
   );
 }
