@@ -97,18 +97,6 @@ function FlyToStation({ station }: { station: StationData | null | undefined }) 
   return null;
 }
 
-function MapResizeHandler({ trigger }: { trigger: boolean }) {
-  const map = useMap();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 350);
-    return () => clearTimeout(timer);
-  }, [trigger, map]);
-
-  return null;
-}
 
 interface MapClickHandlerProps {
   stations: StationData[];
