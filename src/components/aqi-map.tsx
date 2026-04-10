@@ -24,10 +24,13 @@ interface AQIMapProps {
   forecast?: ForecastData | null;
   forecastYear?: number;
   onForecastYearChange?: (year: number) => void;
+  // Livability state lifted to parent
+  onLivabilityForecastChange?: (forecast: StationForecastResult | null) => void;
   livabilityYear: number;
   onLivabilityYearChange?: (year: number) => void;
   livabilityLayerActive: boolean;
   onLayersChange?: (layers: LayerVisibility) => void;
+  sidePanelOpen?: boolean;
 }
 
 // Calculate distance between two points in km (Haversine formula)
@@ -97,6 +100,18 @@ function FlyToStation({ station }: { station: StationData | null | undefined }) 
   return null;
 }
 
+function MapResizeHandler({ trigger }: { trigger: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [trigger, map]);
+
+  return null;
+}
 
 interface MapClickHandlerProps {
   stations: StationData[];
@@ -161,10 +176,12 @@ export function AQIMap({
   forecast,
   forecastYear,
   onForecastYearChange,
+  onLivabilityForecastChange,
   livabilityYear,
   onLivabilityYearChange,
   livabilityLayerActive,
   onLayersChange,
+  sidePanelOpen,
 }: AQIMapProps) {
   const delhiCenter: [number, number] = [28.6139, 77.209];
 
@@ -301,7 +318,7 @@ export function AQIMap({
         <OnDemandVoronoiLayer
           visible={layers.livability}
           selectedYear={livabilityYear}
-          
+          onStationSelect={(f) => onLivabilityForecastChange?.(f)}
         />
 
         {forecast && forecastYear && (
@@ -322,7 +339,7 @@ export function AQIMap({
           ))}
 
         <FlyToStation station={selectedStation} />
-        
+        <MapResizeHandler trigger={!!sidePanelOpen} />
       </MapContainer>
 
       {/* Livability Legend */}

@@ -7,7 +7,7 @@ import { ZoneLegend } from '@/components/zone-legend';
 import { ForecastPanel } from '@/components/forecast/forecast-panel';
 import { ComparisonView } from '@/components/forecast/comparison-view';
 import { SeasonalAnalysisPanel } from '@/components/seasonal/seasonal-analysis-panel';
-
+import { LivabilitySidePanel } from '@/components/map/livability-side-panel';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAQIData } from '@/hooks/use-aqi-data';
@@ -18,7 +18,7 @@ import { WeeklyForecastPanel } from '@/components/forecast/weekly-forecast-panel
 import { useAlertSubscriptions } from '@/hooks/use-alert-subscriptions';
 import { useAuth } from '@/hooks/use-auth';
 import { StationData } from '@/types/aqi';
-
+import { StationForecastResult } from '@/lib/forecasting-engine';
 import { LayerVisibility } from '@/components/map/map-layer-controls';
 import { RefreshCw, Clock, Wind, Wifi, WifiOff, TrendingUp, Loader2, PanelRightOpen, GitCompare, Calendar, X, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,7 +35,8 @@ const Index = () => {
   const [showWeeklyForecast, setShowWeeklyForecast] = useState(false);
   const [forecastYear, setForecastYear] = useState<number>(new Date().getFullYear() + 1);
 
-  // Livability layer state
+  // Livability panel state - lifted from AQIMap
+  const [livabilityForecast, setLivabilityForecast] = useState<StationForecastResult | null>(null);
   const [livabilityYear, setLivabilityYear] = useState(2025);
   const [livabilityLayerActive, setLivabilityLayerActive] = useState(false);
 
@@ -121,8 +122,16 @@ const Index = () => {
     setSelectedStation(null);
   }, []);
 
+  const handleCloseSidePanel = useCallback(() => {
+    setLivabilityForecast(null);
+  }, []);
+
   const handleLayersChange = useCallback((layers: LayerVisibility) => {
     setLivabilityLayerActive(layers.livability);
+    // Close the panel when livability layer is turned off
+    if (!layers.livability) {
+      setLivabilityForecast(null);
+    }
   }, []);
 
   // Handle ESC key to close all modals/popups
@@ -137,6 +146,8 @@ const Index = () => {
           setShowComparison(false);
         } else if (showForecast) {
           setShowForecast(false);
+        } else if (livabilityForecast) {
+          setLivabilityForecast(null);
         } else if (selectedStation) {
           setSelectedStation(null);
         }
@@ -144,7 +155,9 @@ const Index = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showWeeklyForecast, showSeasonalAnalysis, showComparison, showForecast, selectedStation]);
+  }, [showWeeklyForecast, showSeasonalAnalysis, showComparison, showForecast, selectedStation, livabilityForecast]);
+
+  const sidePanelOpen = !!livabilityForecast;
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -300,10 +313,12 @@ const Index = () => {
             forecast={forecast}
             forecastYear={forecastYear}
             onForecastYearChange={setForecastYear}
+            onLivabilityForecastChange={setLivabilityForecast}
             livabilityYear={livabilityYear}
             onLivabilityYearChange={setLivabilityYear}
             livabilityLayerActive={livabilityLayerActive}
             onLayersChange={handleLayersChange}
+            sidePanelOpen={sidePanelOpen}
           />
 
           {/* Station Details Sheet */}
@@ -368,6 +383,16 @@ const Index = () => {
           )}
         </div>
 
+        {/* Livability Sidebar - flex sibling to map, NOT inside map */}
+        {sidePanelOpen && (
+          <LivabilitySidePanel
+            forecast={livabilityForecast}
+            onClose={handleCloseSidePanel}
+            selectedYear={livabilityYear}
+            onYearChange={setLivabilityYear}
+            years={LIVABILITY_YEARS}
+          />
+      )}
 
       {/* Weekly Forecast Panel */}
       {showWeeklyForecast && weeklyData && (
