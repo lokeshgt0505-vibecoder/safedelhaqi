@@ -313,7 +313,7 @@ export function AQIMap({
         <OnDemandVoronoiLayer
           visible={layers.livability}
           selectedYear={livabilityYear}
-          onStationSelect={(f) => onLivabilityForecastChange?.(f)}
+          
         />
 
         {forecast && forecastYear && (
