@@ -12,7 +12,7 @@ import { ForecastLayer } from './map/forecast-layer';
 import { MapLayerControls, LayerVisibility } from './map/map-layer-controls';
 import { AreaInfoPopup } from './map/area-info-popup';
 import { YearSlider } from './map/year-slider';
-import { LivabilityLegend } from './map/livability-legend';
+
 import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
 import { AreaLivabilityCard } from './map/area-livability-card';
 import { mapAreaToStation, AreaStationResult } from '@/lib/area-station-mapping';
@@ -325,8 +325,6 @@ export function AQIMap({
         
       </MapContainer>
 
-      {/* Livability Legend */}
-      <LivabilityLegend visible={layers.livability} />
 
       {/* Year slider for forecast (non-livability mode) */}
       {forecast && layers.forecast && !layers.livability && forecastYear && onForecastYearChange && forecastYears.length > 0 && (
