@@ -14,8 +14,10 @@ import { AreaInfoPopup } from './map/area-info-popup';
 import { YearSlider } from './map/year-slider';
 import { LivabilityLegend } from './map/livability-legend';
 import { OnDemandVoronoiLayer } from './map/on-demand-voronoi-layer';
-import { AreaLivabilityCard } from './map/area-livability-card';
 import { mapAreaToStation, AreaStationResult } from '@/lib/area-station-mapping';
+import { SentinelLayer } from './map/sentinel-layer';
+import { SentinelControls } from './map/sentinel-controls';
+import { useSentinelData } from '@/hooks/use-sentinel-data';
 
 interface AQIMapProps {
   stations: StationData[];
@@ -193,7 +195,18 @@ export function AQIMap({
     buffers: false,
     forecast: false,
     livability: false,
+    satellite: false,
   });
+
+  // Sentinel-5P data
+  const { activeData: sentinelActiveData, activePollutant, setActivePollutant, isLoading: isSentinelLoading, fetchSentinelData, data: sentinelData } = useSentinelData();
+
+  // Auto-fetch sentinel data when layer is turned on
+  useEffect(() => {
+    if (layers.satellite && sentinelData.length === 0 && !isSentinelLoading) {
+      fetchSentinelData();
+    }
+  }, [layers.satellite]);
 
   // Sync livability layer with parent
   useEffect(() => {
