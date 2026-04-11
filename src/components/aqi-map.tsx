@@ -199,7 +199,7 @@ export function AQIMap({
   });
 
   // Sentinel-5P data
-  const { activeData: sentinelActiveData, activePollutant, setActivePollutant, isLoading: isSentinelLoading, fetchSentinelData, data: sentinelData } = useSentinelData();
+  const { activeData: sentinelActiveData, activePollutant, setActivePollutant, isLoading: isSentinelLoading, fetchSentinelData, data: sentinelData, isLive: isSentinelLive } = useSentinelData();
 
   // Auto-fetch sentinel data when layer is turned on
   useEffect(() => {
@@ -364,6 +364,7 @@ export function AQIMap({
         onPollutantChange={setActivePollutant}
         isLoading={isSentinelLoading}
         hasData={sentinelData.length > 0}
+        isLive={isSentinelLive}
         onFetch={fetchSentinelData}
       />
 
