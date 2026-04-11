@@ -346,6 +346,8 @@ export function AQIMap({
           />
         )}
 
+        <SentinelLayer data={sentinelActiveData} visible={layers.satellite} />
+
         {layers.stations &&
           sortedStations.map((station) => (
             <StationMarker key={station.id} station={station} onClick={onStationClick} />
@@ -354,6 +356,16 @@ export function AQIMap({
         <FlyToStation station={selectedStation} />
         <MapResizeHandler trigger={!!sidePanelOpen} />
       </MapContainer>
+
+      {/* Sentinel-5P Controls */}
+      <SentinelControls
+        visible={layers.satellite}
+        activePollutant={activePollutant}
+        onPollutantChange={setActivePollutant}
+        isLoading={isSentinelLoading}
+        hasData={sentinelData.length > 0}
+        onFetch={fetchSentinelData}
+      />
 
       {/* Livability Legend */}
       <LivabilityLegend visible={layers.livability} />
