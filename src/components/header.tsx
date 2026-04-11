@@ -30,10 +30,10 @@ export function Header() {
           </div>
           <div>
             <h1 className="font-display text-xl font-bold text-foreground">
-              Delhi AQI
+              Project O2
             </h1>
             <p className="text-xs text-muted-foreground -mt-0.5">
-              Zoning & Forecast
+              Air Quality Intelligence
             </p>
           </div>
         </Link>

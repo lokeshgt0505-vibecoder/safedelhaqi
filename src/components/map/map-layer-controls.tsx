@@ -1,4 +1,4 @@
-import { Layers, MapPin, Circle, Hexagon, Thermometer, TrendingUp, Home } from 'lucide-react';
+import { Layers, MapPin, Circle, Hexagon, Thermometer, TrendingUp, Home, Satellite } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ export interface LayerVisibility {
   buffers: boolean;
   forecast: boolean;
   livability: boolean;
+  satellite: boolean;
 }
 
 interface MapLayerControlsProps {
@@ -35,7 +36,7 @@ export function MapLayerControls({ layers, onToggleLayer, showForecastToggle }: 
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Map Layers</DropdownMenuLabel>
+          <DropdownMenuLabel>Data Sources</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
           <DropdownMenuCheckboxItem
@@ -43,9 +44,21 @@ export function MapLayerControls({ layers, onToggleLayer, showForecastToggle }: 
             onCheckedChange={() => onToggleLayer('stations')}
           >
             <MapPin className="h-4 w-4 mr-2" />
-            Station Markers
+            WAQI Ground Stations
           </DropdownMenuCheckboxItem>
           
+          <DropdownMenuCheckboxItem
+            checked={layers.satellite}
+            onCheckedChange={() => onToggleLayer('satellite')}
+          >
+            <Satellite className="h-4 w-4 mr-2" />
+            Sentinel-5P Satellite
+          </DropdownMenuCheckboxItem>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Visualizations</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+
           <DropdownMenuCheckboxItem
             checked={layers.heatmap}
             onCheckedChange={() => onToggleLayer('heatmap')}
